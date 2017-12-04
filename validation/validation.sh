@@ -72,8 +72,8 @@ function runJetsGun {
 
   if [ ! -f $inputroot ]
   then
-    python validation/FlatGunLHEventProducer.py --pdg $pid --ptmin 1 --ptmax 50000 --etamin -6 --etamax 6 --size $nEvents --seed 1 --output $lhe --log --ecm 100000
-
+    python validation/flatGunLHEventProducer.py --pdg $pid  --guntype pt --pmin 1 --pmax 50000 --etamin -6 --etamax 6 --nevts $nEvents --seed 1 --output $lhe --log --ecm 100000
+    gunzip $lhe.gz
     sed "/Beams:LHEF/s|=[[:space:]].*|= $lhe|; /Main:numberOfEvents/s/=[[:space:]]*[0-9]*/= $nEvents/" examples/Pythia8/configLHE.cmnd > $cmnd
 
     ./DelphesPythia8 cards/gen_card.tcl $cmnd $inputroot
@@ -83,12 +83,12 @@ function runJetsGun {
 }
 
 
-runParticleGun pion 211
-runParticleGun electron 11
-runParticleGun muon 13
-runParticleGun photon 22
-runParticleGun neutron 2112
-runParticleGun taujet 15
+runParticleGun pion 211 &
+runParticleGun electron 11 &
+runParticleGun muon 13 &
+runParticleGun photon 22 &
+runParticleGun neutron 2112 &
+runParticleGun taujet 15 &
 runJetsGun jet 1 &
 runJetsGun bjet 5 &
 runJetsGun cjet 4 &
