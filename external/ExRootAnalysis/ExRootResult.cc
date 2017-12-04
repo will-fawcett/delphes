@@ -21,6 +21,7 @@
 #include "TPaveStats.h"
 #include "TList.h"
 #include "TH2.h"
+#include "TH3.h"
 #include "THStack.h"
 #include "TProfile.h"
 #include "TObjArray.h"
@@ -189,12 +190,14 @@ void ExRootResult::PrintPlot(TObject *plot, const char *sufix, const char *forma
     if(histogram == 0 || histogram->Integral() > 0.0)
     {
       canvas->SetLogy(settings.logy);
+      canvas->SetLogz(settings.logz); // WJF may need to check type
     }
     else
     {
       canvas->SetLogy(0);
     }
 
+    // Draw attachments, if there are any
     if(settings.attachments)
     {
       TIter iterator(settings.attachments);
@@ -247,6 +250,7 @@ void ExRootResult::Print(const char *format)
     if(histogram == 0 || histogram->Integral() > 0.0)
     {
       canvas->SetLogy(settings.logy);
+      canvas->SetLogz(settings.logz); // WJF add, might need to check type for TH2? 
     }
     else
     {
@@ -263,7 +267,12 @@ void ExRootResult::Print(const char *format)
     }
     else
     {
-      object->Draw();
+      if(settings.option){
+        object->Draw(settings.option);
+      }
+      else{
+        object->Draw();
+      }
     }
 
     canvas->Update();
@@ -307,7 +316,9 @@ TH1 *ExRootResult::AddHist1D(const char *name, const char *title,
   PlotSettings settings;
   settings.logx = logx;
   settings.logy = logy;
+  settings.logz = 0;
   settings.attachments = 0;
+  settings.option = NULL;
 
   hist->GetXaxis()->SetTitle(xlabel);
   hist->GetYaxis()->SetTitle(ylabel);
@@ -331,7 +342,9 @@ TH1 *ExRootResult::AddHist1D(const char *name, const char *title,
   PlotSettings settings;
   settings.logx = logx;
   settings.logy = logy;
+  settings.logz = 0;
   settings.attachments = 0;
+  settings.option = NULL;
 
   hist->GetXaxis()->SetTitle(xlabel);
   hist->GetYaxis()->SetTitle(ylabel);
@@ -355,7 +368,9 @@ TProfile *ExRootResult::AddProfile(const char *name, const char *title,
   PlotSettings settings;
   settings.logx = logx;
   settings.logy = logy;
+  settings.logz = 0;
   settings.attachments = 0;
+  settings.option = NULL;
 
   profile->GetXaxis()->SetTitle(xlabel);
   profile->GetYaxis()->SetTitle(ylabel);
@@ -374,13 +389,16 @@ TH2 *ExRootResult::AddHist2D(const char *name, const char *title,
                              const char *xlabel, const char *ylabel,
                              Int_t nxbins, Axis_t xmin, Axis_t xmax,
                              Int_t nybins, Axis_t ymin, Axis_t ymax,
-                             Int_t logx, Int_t logy)
+                             Int_t logx, Int_t logy, Int_t logz,
+                             const char *option)
 {
   TH2F *hist = new TH2F(name, title, nxbins, xmin, xmax, nybins, ymin, ymax);
   PlotSettings settings;
   settings.logx = logx;
   settings.logy = logy;
+  settings.logz = logz;
   settings.attachments = 0;
+  settings.option = option;
 
   hist->GetXaxis()->SetTitle(xlabel);
   hist->GetYaxis()->SetTitle(ylabel);
@@ -395,13 +413,46 @@ TH2 *ExRootResult::AddHist2D(const char *name, const char *title,
 
 //------------------------------------------------------------------------------
 
+TH3 *ExRootResult::AddHist3D(const char *name, const char *title, 
+                 const char *xlabel, const char *ylabel, const char *zlabel, 
+                 Int_t nxbins, Axis_t xmin, Axis_t xmax,
+                 Int_t nybins, Axis_t ymin, Axis_t ymax,
+                 Int_t nzbins, Axis_t zmin, Axis_t zmax,
+                 Int_t logx, Int_t logy, Int_t logz)
+{
+  TH3F * hist = new TH3F(name, title, nxbins, xmin, xmax, nybins, ymin, ymax, nzbins, zmin, zmax);
+
+  PlotSettings settings;
+  settings.logx = logx;
+  settings.logy = logy;
+  settings.logz = logz;
+  settings.attachments = 0;
+  settings.option = NULL;
+
+  hist->GetXaxis()->SetTitle(xlabel);
+  hist->GetYaxis()->SetTitle(ylabel);
+  hist->GetZaxis()->SetTitle(zlabel);
+  
+  fPool.insert(hist);
+  fPlotMap[hist] = settings;
+
+  HistStyle(hist, kFALSE);
+  if(fFolder) fFolder->Add(hist);
+  return hist;
+
+}
+
+//------------------------------------------------------------------------------
+
 THStack *ExRootResult::AddHistStack(const char *name, const char *title)
 {
   THStack *stack = new THStack(name, title);
   PlotSettings settings;
   settings.logx = 0;
   settings.logy = 0;
+  settings.logz = 0;
   settings.attachments = 0;
+  settings.option = NULL;
 
   fPool.insert(stack);
   fPlotMap[stack] = settings;

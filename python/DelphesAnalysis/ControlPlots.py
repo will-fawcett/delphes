@@ -31,9 +31,11 @@ parser.add_option("--jobNumber", type="int", dest='jobNumber', default="0",
 (options, args) = parser.parse_args()
 
 #special treatment of the config file... the rest of the options will be parsed in main.
+print options.conf 
 if options.conf is not None:
   try:
     theUserConf = __import__(os.path.splitext(options.conf)[0])
+    print theUserConf
   except:
     raise ImportError("%s is not a valid configuration file."%options.conf)
   else:

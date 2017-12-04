@@ -1,18 +1,13 @@
 #
-# Official Delphes card prepared by FCC-hh collaboration
+#  Delphes card for a triplet of tracking layers
 #
-#  Main authors:  Michele Selvaggi (CERN)
-#
-#  Released on: Apr. 6th, 2017
-#
-#  Configuration: FCC-hh baseline detector
+#  Main authors:  William Fawcett (Geneva)
 #
 #######################################
 # Order of execution of various modules
 #######################################
 
 set ExecutionPath {
-
   ParticlePropagator
 
   ChargedHadronTrackingEfficiency

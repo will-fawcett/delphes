@@ -13,6 +13,7 @@ set ExecutionPath {
   ElectronMomentumSmearing
   MuonMomentumSmearing
 
+  TruthTrackMerger
   TrackMerger
  
   ECal
@@ -168,7 +169,7 @@ module MomentumSmearing ElectronMomentumSmearing {
   # set ResolutionFormula {resolution formula as a function of eta and energy}
 
   # resolution formula for electrons
-  # based on arXiv:1502.02701
+  # based on arXiv:1405.6569
   set ResolutionFormula {                  (abs(eta) <= 0.5) * (pt > 0.1) * sqrt(0.03^2 + pt^2*1.3e-3^2) +
                          (abs(eta) > 0.5 && abs(eta) <= 1.5) * (pt > 0.1) * sqrt(0.05^2 + pt^2*1.7e-3^2) +
                          (abs(eta) > 1.5 && abs(eta) <= 2.5) * (pt > 0.1) * sqrt(0.15^2 + pt^2*3.1e-3^2)}
@@ -193,6 +194,13 @@ module MomentumSmearing MuonMomentumSmearing {
 ##############
 # Track merger
 ##############
+
+module Merger TruthTrackMerger {
+  add InputArray ParticlePropagator/chargedHadrons
+  add InputArray ParticlePropagator/muons
+  add InputArray ParticlePropagator/electrons
+  set OutputArray tracks 
+}
 
 module Merger TrackMerger {
 # add InputArray InputArray
@@ -784,6 +792,7 @@ module TreeWriter TreeWriter {
   add Branch Delphes/allParticles Particle GenParticle
 
   add Branch TrackMerger/tracks Track Track
+  add Branch TruthTrackMerger/tracks TruthTrack Track 
   add Branch Calorimeter/towers Tower Tower
 
   add Branch HCal/eflowTracks EFlowTrack Track

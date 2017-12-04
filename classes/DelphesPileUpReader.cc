@@ -75,6 +75,7 @@ DelphesPileUpReader::DelphesPileUpReader(const char *fileName) :
   if(fEntries >= kIndexSize)
   {
     message << "too many events in pile-up file " << fileName;
+    message << "detected " << fEntries << " max is " << kIndexSize; 
     throw runtime_error(message.str());
   }
 

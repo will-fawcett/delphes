@@ -303,6 +303,7 @@ void ParticlePropagator::Process()
 
       d0        = ((x - bsx) * py - (y - bsy) * px) / pt;
       dz        = z - ((x - bsx) * px + (y - bsy) * py) / pt * (pz / pt);
+      //std::cout << "Calculated dz " << dz << std::endl; 
       p         = candidateMomentum.P();
       ctgTheta  = 1.0 / TMath::Tan (candidateMomentum.Theta());
 

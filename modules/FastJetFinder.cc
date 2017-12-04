@@ -65,8 +65,6 @@
 #include "fastjet/contribs/Nsubjettiness/NjettinessPlugin.hh"
 #include "fastjet/contribs/Nsubjettiness/ExtraRecombiners.hh"
 
-#include "fastjet/contribs/ValenciaPlugin/ValenciaPlugin.hh"
-
 #include "fastjet/tools/Filter.hh"
 #include "fastjet/tools/Pruner.hh"
 #include "fastjet/contribs/RecursiveTools/SoftDrop.hh"
@@ -80,7 +78,7 @@ using namespace fastjet::contrib;
 
 FastJetFinder::FastJetFinder() :
   fPlugin(0), fRecomb(0), fAxesDef(0), fMeasureDef(0), fNjettinessPlugin(0), 
-  fDefinition(0), fAreaDefinition(0), fItInputArray(0), fValenciaPlugin(0)
+  fDefinition(0), fAreaDefinition(0), fItInputArray(0)
 {
 
 }
@@ -119,7 +117,6 @@ void FastJetFinder::Init()
 
   fJetPTMin = GetDouble("JetPTMin", 10.0);
 
- 
   //-- N(sub)jettiness parameters --
 
   fComputeNsubjettiness = GetBool("ComputeNsubjettiness", false);
@@ -127,16 +124,7 @@ void FastJetFinder::Init()
   fAxisMode = GetInt("AxisMode", 1);
   fRcutOff = GetDouble("RcutOff", 0.8); // used only if Njettiness is used as jet clustering algo (case 8)
   fN = GetInt("N", 2);                  // used only if Njettiness is used as jet clustering algo (case 8)
-
-  //-- Exclusive clustering for e+e- collisions --
-  
-  fNJets = GetInt("NJets",2);
-  fExclusiveClustering = GetBool("ExclusiveClustering", false);
-
-  //-- Valencia Linear Collider algorithm
-  fGamma = GetDouble("Gamma", 1.0);
-  //fBeta parameter see above
-  
+     
   fMeasureDef = new NormalizedMeasure(fBeta, fParameterR);
    
   switch(fAxisMode)
@@ -247,11 +235,6 @@ void FastJetFinder::Init()
       fNjettinessPlugin = new NjettinessPlugin(fN, Njettiness::wta_kt_axes, Njettiness::unnormalized_cutoff_measure, fBeta, fRcutOff);
       fDefinition = new JetDefinition(fNjettinessPlugin);
       break;
-  case 9:
-      fValenciaPlugin = new ValenciaPlugin(fParameterR, fBeta, fGamma);
-      fDefinition = new JetDefinition(fValenciaPlugin);
-      break;
-
   }
 
    
@@ -310,8 +293,6 @@ void FastJetFinder::Finish()
   if(fNjettinessPlugin) delete static_cast<JetDefinition::Plugin*>(fNjettinessPlugin);
   if(fAxesDef) delete fAxesDef;
   if(fMeasureDef) delete fMeasureDef;
-  if(fValenciaPlugin) delete static_cast<JetDefinition::Plugin*>(fValenciaPlugin);
-
 }
 
 //------------------------------------------------------------------------------
@@ -375,15 +356,8 @@ void FastJetFinder::Process()
   }
 
   outputList.clear();
+  outputList = sorted_by_pt(sequence->inclusive_jets(fJetPTMin));
 
-  if(fExclusiveClustering)
-    {
-      outputList = sorted_by_pt(sequence->exclusive_jets( fNJets ));
-    }
-  else
-    {
-      outputList = sorted_by_pt(sequence->inclusive_jets(fJetPTMin));
-    }
 
   // loop over all jets and export them
   detaMax = 0.0;

@@ -312,24 +312,26 @@ void TrackSmearing::Process()
 
     if (fApplyToPileUp || !candidate->IsPU)
     {
-       d0 = gRandom->Gaus(d0, d0Error);
-       dz = gRandom->Gaus(dz, dzError);
-       p = gRandom->Gaus(p, pError);
+       d0       = gRandom->Gaus(d0, d0Error);
+       //std::cout << "dz before smearing " << dz << " and sigma " << dzError << std::endl;
+       dz       = gRandom->Gaus(dz, dzError);
+       //std::cout << "dz after smearing " << dz << std::endl;
+       p        = gRandom->Gaus(p, pError);
        ctgTheta = gRandom->Gaus(ctgTheta, ctgThetaError);
-       phi = gRandom->Gaus(phi, phiError);
+       phi      = gRandom->Gaus(phi, phiError);
     }
 
     if(p < 0.0) continue;
     while (phi > TMath::Pi ()) phi -= TMath::TwoPi ();
     while (phi <= -TMath::Pi ()) phi += TMath::TwoPi ();
 
-    mother = candidate;
-    candidate = static_cast<Candidate*>(candidate->Clone());
-    candidate->D0 = d0;
-    candidate->DZ = dz;
-    candidate->P = p;
+    mother              = candidate;
+    candidate           = static_cast<Candidate*>(candidate->Clone());
+    candidate->D0       = d0;
+    candidate->DZ       = dz;
+    candidate->P        = p;
     candidate->CtgTheta = ctgTheta;
-    candidate->Phi = phi;
+    candidate->Phi      = phi;
 
     theta = TMath::ACos(ctgTheta / TMath::Sqrt (1.0 + ctgTheta * ctgTheta));
     candidate->Momentum.SetPx (p * TMath::Cos (phi) * TMath::Sin (theta));

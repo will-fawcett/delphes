@@ -351,6 +351,7 @@ void TreeWriter::ProcessTracks(ExRootTreeBranch *branch, TObjArray *array)
 
     entry->D0            = candidate->D0;
     entry->ErrorD0       = candidate->ErrorD0;
+    //std::cout << "Stored dz " << candidate->DZ << std::endl;
     entry->DZ            = candidate->DZ;
     entry->ErrorDZ       = candidate->ErrorDZ;
 

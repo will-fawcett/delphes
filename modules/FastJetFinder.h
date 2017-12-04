@@ -40,7 +40,6 @@ namespace fastjet {
   class JetMedianBackgroundEstimator;
   namespace contrib {
     class NjettinessPlugin;
-    class ValenciaPlugin;
     class AxesDefinition; 
     class MeasureDefinition;    
   }
@@ -61,17 +60,12 @@ private:
 
   void *fPlugin; //!
   void *fRecomb; //!
-
-  fastjet::contrib::AxesDefinition *fAxesDef; 
-  fastjet::contrib::MeasureDefinition *fMeasureDef;    
-
   fastjet::contrib::NjettinessPlugin *fNjettinessPlugin; //!
-  fastjet::contrib::ValenciaPlugin *fValenciaPlugin; //!
+
   fastjet::JetDefinition *fDefinition; //!
 
   Int_t fJetAlgorithm;
   Double_t fParameterR;
-
   Double_t fJetPTMin;
   Double_t fConeRadius;
   Double_t fSeedThreshold;
@@ -82,17 +76,11 @@ private:
   Int_t fAdjacencyCut;
   Double_t fOverlapThreshold;
 
-  //-- Exclusive clustering for e+e- collisions --
-
-  Int_t fNJets;
-  Bool_t fExclusiveClustering;
-
-  //-- Valencia Linear Collider algorithm
-  Double_t fGamma;
-  
   //-- N (sub)jettiness parameters --
 
   Bool_t fComputeNsubjettiness;
+  fastjet::contrib::AxesDefinition *fAxesDef; 
+  fastjet::contrib::MeasureDefinition *fMeasureDef;    
   Double_t fBeta;
   Int_t fAxisMode;
   Double_t fRcutOff;
