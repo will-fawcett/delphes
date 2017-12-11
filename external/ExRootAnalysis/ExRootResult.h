@@ -31,8 +31,9 @@ public:
   void Write(const char *fileName = "results.root");
   void Print(const char *format = "eps");
 
-  TH1 *AddHist1D(const char *name, const char *title,
-                 const char *xlabel, const char *ylabel,
+  /*TH1 *AddHist1D(const char *name, const char *title,*/
+  TH1 *AddHist1D(const std::string name, const std::string title,
+                 const std::string xlabel, const std::string ylabel,
                  Int_t nxbins, Axis_t xmin, Axis_t xmax,
                  Int_t logx = 0, Int_t logy = 0);
 

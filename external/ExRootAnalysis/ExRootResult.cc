@@ -307,12 +307,13 @@ void ExRootResult::Print(const char *format)
 
 //------------------------------------------------------------------------------
 
-TH1 *ExRootResult::AddHist1D(const char *name, const char *title,
-                             const char *xlabel, const char *ylabel,
+//TH1 *ExRootResult::AddHist1D(const char *name, const char *title,
+TH1 *ExRootResult::AddHist1D(const std::string name, const std::string title,
+                             const std::string xlabel, const std::string ylabel,
                              Int_t nxbins, Axis_t xmin, Axis_t xmax,
                              Int_t logx, Int_t logy)
 {
-  TH1F *hist = new TH1F(name, title, nxbins, xmin, xmax);
+  TH1F *hist = new TH1F(name.c_str(), title.c_str(), nxbins, xmin, xmax);
   PlotSettings settings;
   settings.logx = logx;
   settings.logy = logy;
@@ -320,8 +321,8 @@ TH1 *ExRootResult::AddHist1D(const char *name, const char *title,
   settings.attachments = 0;
   settings.option = NULL;
 
-  hist->GetXaxis()->SetTitle(xlabel);
-  hist->GetYaxis()->SetTitle(ylabel);
+  hist->GetXaxis()->SetTitle(xlabel.c_str());
+  hist->GetYaxis()->SetTitle(ylabel.c_str());
 
   fPool.insert(hist);
   fPlotMap[hist] = settings;

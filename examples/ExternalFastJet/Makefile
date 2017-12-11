@@ -4,13 +4,15 @@
 # You need to set ROOT_DIR, DELPHES_DIR and FASTJET_DIR for your project.
 
 # FastJet directory
-FASTJET_DIR = /opt/fastjet
+FASTJET_DIR = /atlas/users/wfawcett/software/fastjet-install/
 
 # ROOT directory
-ROOT_DIR = /opt/root
+#ROOT_DIR = /opt/root
+#ROOT_DIR = /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/x86_64/root/6.10.04-x86_64-slc6-gcc62-opt/bin/root
+ROOT_DIR = /cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase/x86_64/root/6.10.04-x86_64-slc6-gcc62-opt/
 
 # Delphes directory
-DELPHES_DIR = ../..
+DELPHES_DIR = /atlas/users/wfawcett/fcc/delphes
 
 #
 

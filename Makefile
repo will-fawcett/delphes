@@ -183,6 +183,22 @@ EXECUTABLE_OBJ +=  \
 	tmp/examples/Example1.$(ObjSuf) \
 	tmp/validation/DelphesValidation.$(ObjSuf)
 
+trackParameters$(ExeSuf): \
+	tmp/analysis/trackParameters.$(ObjSuf)
+
+tmp/analysis/trackParameters.$(ObjSuf): \
+	analysis/trackParameters.cpp \
+	modules/TestClass.h \
+	classes/DelphesClasses.h \
+	external/ExRootAnalysis/ExRootTreeReader.h \
+	external/ExRootAnalysis/ExRootResult.h \
+	modules/Delphes.h \
+	classes/DelphesClasses.h \
+	classes/DelphesFactory.h \
+	modules/FastJetFinder.h \
+	external/fastjet/PseudoJet.hh \
+	external/fastjet/JetDefinition.hh \
+	external/fastjet/ClusterSequence.hh
 DelphesHepMC$(ExeSuf): \
 	tmp/readers/DelphesHepMC.$(ObjSuf)
 
@@ -233,12 +249,14 @@ tmp/readers/DelphesSTDHEP.$(ObjSuf): \
 	external/ExRootAnalysis/ExRootTreeBranch.h \
 	external/ExRootAnalysis/ExRootProgressBar.h
 EXECUTABLE +=  \
+	trackParameters$(ExeSuf) \
 	DelphesHepMC$(ExeSuf) \
 	DelphesLHEF$(ExeSuf) \
 	DelphesROOT$(ExeSuf) \
 	DelphesSTDHEP$(ExeSuf)
 
 EXECUTABLE_OBJ +=  \
+	tmp/analysis/trackParameters.$(ObjSuf) \
 	tmp/readers/DelphesHepMC.$(ObjSuf) \
 	tmp/readers/DelphesLHEF.$(ObjSuf) \
 	tmp/readers/DelphesROOT.$(ObjSuf) \
@@ -890,6 +908,9 @@ tmp/modules/TauTagging.$(ObjSuf): \
 	classes/DelphesClasses.h \
 	classes/DelphesFactory.h \
 	classes/DelphesFormula.h
+tmp/modules/TestClass.$(ObjSuf): \
+	modules/TestClass.$(SrcSuf) \
+	modules/TestClass.h
 tmp/modules/TimeSmearing.$(ObjSuf): \
 	modules/TimeSmearing.$(SrcSuf) \
 	modules/TimeSmearing.h \
@@ -1072,6 +1093,7 @@ DELPHES_OBJ +=  \
 	tmp/modules/StatusPidFilter.$(ObjSuf) \
 	tmp/modules/TaggingParticlesSkimmer.$(ObjSuf) \
 	tmp/modules/TauTagging.$(ObjSuf) \
+	tmp/modules/TestClass.$(ObjSuf) \
 	tmp/modules/TimeSmearing.$(ObjSuf) \
 	tmp/modules/TrackCountingBTagging.$(ObjSuf) \
 	tmp/modules/TrackCountingTauTagging.$(ObjSuf) \
@@ -1256,8 +1278,6 @@ tmp/external/fastjet/TilingExtent.$(ObjSuf): \
 tmp/external/fastjet/Voronoi.$(ObjSuf): \
 	external/fastjet/Voronoi.$(SrcSuf) \
 	external/fastjet/internal/Voronoi.hh
-tmp/external/fastjet/contribs/ValenciaPlugin/ValenciaPlugin.$(ObjSuf): \
-	external/fastjet/contribs/ValenciaPlugin/ValenciaPlugin.$(ObjSuf)
 tmp/external/fastjet/contribs/Nsubjettiness/AxesDefinition.$(ObjSuf): \
 	external/fastjet/contribs/Nsubjettiness/AxesDefinition.$(SrcSuf)
 tmp/external/fastjet/contribs/Nsubjettiness/ExtraRecombiners.$(ObjSuf): \
@@ -1288,6 +1308,9 @@ tmp/external/fastjet/contribs/RecursiveTools/SoftDrop.$(ObjSuf): \
 	external/fastjet/contribs/RecursiveTools/SoftDrop.$(SrcSuf)
 tmp/external/fastjet/contribs/SoftKiller/SoftKiller.$(ObjSuf): \
 	external/fastjet/contribs/SoftKiller/SoftKiller.$(SrcSuf)
+tmp/external/fastjet/contribs/ValenciaPlugin/ValenciaPlugin.$(ObjSuf): \
+	external/fastjet/contribs/ValenciaPlugin/ValenciaPlugin.$(SrcSuf) \
+	external/fastjet/NNH.hh
 tmp/external/fastjet/plugins/ATLASCone/ATLASConePlugin.$(ObjSuf): \
 	external/fastjet/plugins/ATLASCone/ATLASConePlugin.$(SrcSuf) \
 	external/fastjet/ClusterSequence.hh
@@ -1418,7 +1441,6 @@ tmp/modules/FastJetFinder.$(ObjSuf): \
 	external/fastjet/plugins/SISCone/fastjet/SISConePlugin.hh \
 	external/fastjet/plugins/CDFCones/fastjet/CDFMidPointPlugin.hh \
 	external/fastjet/plugins/CDFCones/fastjet/CDFJetCluPlugin.hh \
-	external/fastjet/contribs/ValenciaPlugin/ValenciaPlugin.hh \
 	external/fastjet/contribs/Nsubjettiness/Nsubjettiness.hh \
 	external/fastjet/contribs/Nsubjettiness/Njettiness.hh \
 	external/fastjet/contribs/Nsubjettiness/NjettinessPlugin.hh \
@@ -1446,7 +1468,6 @@ tmp/modules/FastJetGridMedianEstimator.$(ObjSuf): \
 	external/fastjet/plugins/SISCone/fastjet/SISConePlugin.hh \
 	external/fastjet/plugins/CDFCones/fastjet/CDFMidPointPlugin.hh \
 	external/fastjet/plugins/CDFCones/fastjet/CDFJetCluPlugin.hh \
-	external/fastjet/contribs/ValenciaPlugin/ValenciaPlugin.hh \
 	external/fastjet/contribs/Nsubjettiness/Nsubjettiness.hh \
 	external/fastjet/contribs/Nsubjettiness/Njettiness.hh \
 	external/fastjet/contribs/Nsubjettiness/NjettinessPlugin.hh \
@@ -1504,7 +1525,6 @@ FASTJET_OBJ +=  \
 	tmp/external/fastjet/Selector.$(ObjSuf) \
 	tmp/external/fastjet/TilingExtent.$(ObjSuf) \
 	tmp/external/fastjet/Voronoi.$(ObjSuf) \
-	tmp/external/fastjet/contribs/ValenciaPlugin/ValenciaPlugin.$(ObjSuf) \
 	tmp/external/fastjet/contribs/Nsubjettiness/AxesDefinition.$(ObjSuf) \
 	tmp/external/fastjet/contribs/Nsubjettiness/ExtraRecombiners.$(ObjSuf) \
 	tmp/external/fastjet/contribs/Nsubjettiness/MeasureDefinition.$(ObjSuf) \
@@ -1518,6 +1538,7 @@ FASTJET_OBJ +=  \
 	tmp/external/fastjet/contribs/RecursiveTools/RecursiveSymmetryCutBase.$(ObjSuf) \
 	tmp/external/fastjet/contribs/RecursiveTools/SoftDrop.$(ObjSuf) \
 	tmp/external/fastjet/contribs/SoftKiller/SoftKiller.$(ObjSuf) \
+	tmp/external/fastjet/contribs/ValenciaPlugin/ValenciaPlugin.$(ObjSuf) \
 	tmp/external/fastjet/plugins/ATLASCone/ATLASConePlugin.$(ObjSuf) \
 	tmp/external/fastjet/plugins/ATLASCone/Jet.$(ObjSuf) \
 	tmp/external/fastjet/plugins/ATLASCone/JetConeFinderTool.$(ObjSuf) \
@@ -1705,17 +1726,6 @@ modules/TrackSmearing.h: \
 	classes/DelphesModule.h
 	@touch $@
 
-external/fastjet/ClusterSequence.hh: \
-	external/fastjet/PseudoJet.hh \
-	external/fastjet/Error.hh \
-	external/fastjet/JetDefinition.hh \
-	external/fastjet/SharedPtr.hh \
-	external/fastjet/LimitedWarning.hh \
-	external/fastjet/FunctionOfPseudoJet.hh \
-	external/fastjet/ClusterSequenceStructure.hh \
-	external/fastjet/internal/deprecated.hh
-	@touch $@
-
 external/fastjet/internal/ClosestPair2D.hh: \
 	external/fastjet/internal/ClosestPair2DBase.hh \
 	external/fastjet/internal/SearchTree.hh \
@@ -1725,6 +1735,17 @@ external/fastjet/internal/ClosestPair2D.hh: \
 
 modules/FastJetGridMedianEstimator.h: \
 	classes/DelphesModule.h
+	@touch $@
+
+external/fastjet/ClusterSequence.hh: \
+	external/fastjet/PseudoJet.hh \
+	external/fastjet/Error.hh \
+	external/fastjet/JetDefinition.hh \
+	external/fastjet/SharedPtr.hh \
+	external/fastjet/LimitedWarning.hh \
+	external/fastjet/FunctionOfPseudoJet.hh \
+	external/fastjet/ClusterSequenceStructure.hh \
+	external/fastjet/internal/deprecated.hh
 	@touch $@
 
 external/fastjet/internal/MinHeap.hh: \
@@ -1750,15 +1771,15 @@ external/fastjet/ClusterSequenceActiveAreaExplicitGhosts.hh: \
 	external/fastjet/LimitedWarning.hh
 	@touch $@
 
+modules/ConstituentFilter.h: \
+	classes/DelphesModule.h
+	@touch $@
+
 external/fastjet/JetDefinition.hh: \
 	external/fastjet/internal/numconsts.hh \
 	external/fastjet/PseudoJet.hh \
 	external/fastjet/internal/deprecated.hh \
 	external/fastjet/ClusterSequence.hh
-	@touch $@
-
-modules/ConstituentFilter.h: \
-	classes/DelphesModule.h
 	@touch $@
 
 modules/Calorimeter.h: \
@@ -1781,15 +1802,15 @@ modules/ExampleModule.h: \
 	classes/DelphesModule.h
 	@touch $@
 
+modules/Merger.h: \
+	classes/DelphesModule.h
+	@touch $@
+
 modules/Isolation.h: \
 	classes/DelphesModule.h
 	@touch $@
 
 modules/EnergyScale.h: \
-	classes/DelphesModule.h
-	@touch $@
-
-modules/Merger.h: \
 	classes/DelphesModule.h
 	@touch $@
 
@@ -1896,12 +1917,6 @@ external/fastjet/contribs/Nsubjettiness/ExtraRecombiners.hh: \
 
 display/DelphesBranchElement.h: \
 	display/DelphesCaloData.h
-	@touch $@
-
-
-external/fastjet/contribs/ValenciaPlugin/ValenciaPlugin.hh: \
-	external/fastjet/JetDefinition.hh \
-	external/fastjet/ClusterSequence.hh
 	@touch $@
 
 external/fastjet/contribs/Nsubjettiness/NjettinessPlugin.hh: \
@@ -2121,11 +2136,11 @@ external/fastjet/AreaDefinition.hh: \
 	external/fastjet/GhostedAreaSpec.hh
 	@touch $@
 
-modules/TimeSmearing.h: \
+modules/TreeWriter.h: \
 	classes/DelphesModule.h
 	@touch $@
 
-modules/TreeWriter.h: \
+modules/TimeSmearing.h: \
 	classes/DelphesModule.h
 	@touch $@
 
@@ -2160,11 +2175,11 @@ external/fastjet/ClusterSequencePassiveArea.hh: \
 	external/fastjet/ClusterSequence1GhostPassiveArea.hh
 	@touch $@
 
-modules/FastJetFinder.h: \
+modules/BeamSpotFilter.h: \
 	classes/DelphesModule.h
 	@touch $@
 
-modules/BeamSpotFilter.h: \
+modules/FastJetFinder.h: \
 	classes/DelphesModule.h
 	@touch $@
 

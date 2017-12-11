@@ -53,6 +53,8 @@ private:
   TObjArray *fOutputArray; //!
   TObjArray *fMomentumOutputArray; //!
   TObjArray *fEnergyOutputArray; //!
+  Double_t  fTrackPtMax; //! 
+
 
   ClassDef(Merger, 1)
 };

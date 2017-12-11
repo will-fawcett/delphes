@@ -262,7 +262,7 @@ all:
 
 executableDeps {converters/*.cpp} {examples/*.cpp} {validation/*.cpp}
 
-executableDeps {readers/DelphesHepMC.cpp} {readers/DelphesLHEF.cpp} {readers/DelphesSTDHEP.cpp} {readers/DelphesROOT.cpp}
+executableDeps {readers/DelphesHepMC.cpp} {readers/DelphesLHEF.cpp} {readers/DelphesSTDHEP.cpp} {readers/DelphesROOT.cpp} {analysis/trackParameters.cpp}
 
 puts {ifeq ($(HAS_CMSSW),true)}
 executableDeps {readers/DelphesCMSFWLite.cpp}
@@ -286,11 +286,15 @@ dictDeps {FASTJET_DICT} {modules/FastJetLinkDef.h}
 
 dictDeps {DISPLAY_DICT} {display/DisplayLinkDef.h}
 
-sourceDeps {DELPHES} {classes/*.cc} {modules/*.cc} {external/ExRootAnalysis/*.cc} {external/Hector/*.cc}
+#dictDeps {ANALYSIS_DICT} {analysis/AnalysisLinkDef.h}
+
+sourceDeps {DELPHES} {classes/*.cc} {modules/*.cc} {external/ExRootAnalysis/*.cc} {external/Hector/*.cc} 
 
 sourceDeps {FASTJET} {modules/FastJet*.cc} {modules/RunPUPPI.cc} {external/PUPPI/*.cc} {external/fastjet/*.cc} {external/fastjet/tools/*.cc} {external/fastjet/plugins/*/*.cc} {external/fastjet/contribs/*/*.cc} 
 
 sourceDeps {DISPLAY} {display/*.cc}
+
+#sourceDeps {ANALYSIS} {analysis/TestClass.cc}
 
 tclDeps
 

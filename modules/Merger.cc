@@ -83,6 +83,10 @@ void Merger::Init()
     fInputList.push_back(iterator);
   }
 
+  // WJF: add pT thresold for maximum track pT
+  
+  fTrackPtMax  = GetDouble("TrackPtMax", -1);
+
   // create output arrays
 
   fOutputArray = ExportArray(GetString("OutputArray", "candidates"));
@@ -122,6 +126,7 @@ void Merger::Process()
   sumPT = 0;
   sumE = 0;
 
+
   // loop over all input arrays
   for(itInputList = fInputList.begin(); itInputList != fInputList.end(); ++itInputList)
   {
@@ -137,9 +142,32 @@ void Merger::Process()
       sumPT += candidateMomentum.Pt();
       sumE += candidateMomentum.E();
 
+      // Normally just adds unaltered candidate to fOutputArray 
+      // Modify this to set a maximum pT 
+      // Could potentially have been added to Efficiency
+      if (fTrackPtMax > 0 && candidateMomentum.Pt() > fTrackPtMax){
+        std::cout << "Candidate has pT > " << fTrackPtMax << " pT = " << candidateMomentum.Pt() << std::endl;
+        candidate->Momentum.SetPtEtaPhiM( fTrackPtMax, candidate->Momentum.Eta(), candidate->Momentum.Phi(), candidate->Momentum.M() );
+      }
+
       fOutputArray->Add(candidate);
     }
   }
+
+  // WJF: modify momentum to have a cutoff
+  /*****************
+  if(fTrackPtMax > 0){
+    std::cout << "sumPT: " << sumPT << " total momentum: " << momentum.Pt()  << std::endl;
+    if(momentum.Pt() > fTrackPtMax){
+      std::cout << "replacing " << momentum.Pt() << " with " << fTrackPtMax << std::endl;
+      momentum.SetPtEtaPhiE( fTrackPtMax, momentum.Eta(), momentum.Phi(), momentum.E() );
+    }
+    if(sumPT > fTrackPtMax){
+      std::cout << "replacing " << sumPT << " with " << fTrackPtMax << std::endl;
+      sumPT = fTrackPtMax;
+    }
+  }
+  **********************/
 
   candidate = factory->NewCandidate();
   

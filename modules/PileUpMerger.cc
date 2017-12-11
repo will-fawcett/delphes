@@ -186,11 +186,13 @@ void PileUpMerger::Process()
   }
 
   nvtx++;
+  // WJF: nb vertex is actually a Candidate object
   vertex->Position.SetXYZT(vx, vy, dz, dt);
   vertex->ClusterIndex = nvtx;
   vertex->ClusterNDF = nch;
   vertex->SumPT2 = sumpt2;
   vertex->GenSumPT2 = sumpt2;
+  vertex->IsPU = 0; // WJF add 
   fVertexOutputArray->Add(vertex);
 
   // --- Then with pile-up vertices  ------
@@ -226,7 +228,7 @@ void PileUpMerger::Process()
 
    // --- Pile-up vertex smearing
 
-    fFunction->GetRandom2(dz, dt);
+    fFunction->GetRandom2(dz, dt); // not a bug, GetRandom2 modifies dz and dt. 
 
     dt *= c_light*1.0E3; // necessary in order to make t in mm/c
     dz *= 1.0E3; // necessary in order to make z in mm

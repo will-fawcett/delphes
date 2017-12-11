@@ -53,7 +53,9 @@ public:
   ~FastJetFinder();
 
   void Init();
+  void ManualInit(const TObjArray*);
   void Process();
+  void ManualProcess();
   void Finish();
 
 private:

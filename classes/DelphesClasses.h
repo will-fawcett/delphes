@@ -188,6 +188,7 @@ public:
 
   Int_t Index; // vertex index
   Int_t NDF; // number of degrees of freedom
+  Int_t IsPU; // does the vertex come from pileup
 
   Double_t Sigma; // vertex position (z component) error
   Double_t SumPT2; // sum pt^2 of tracks attached to the vertex

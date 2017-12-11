@@ -90,6 +90,158 @@ FastJetFinder::~FastJetFinder()
 
 }
 
+void FastJetFinder::ManualInit(const TObjArray* i_fInputArray){
+
+  // AntiKt parameters that I want
+  fJetAlgorithm = 6;
+  fParameterR = 0.4;
+  fJetPTMin = 5.0;
+
+  // necessary stuff
+  JetDefinition::Plugin *plugin = 0;
+  JetDefinition::Recombiner *recomb = 0;
+  ExRootConfParam param;
+  Long_t i, size;
+  Double_t etaMin, etaMax;
+  TEstimatorStruct estimatorStruct;
+
+  //////////////////////////////////////
+  // Other parameters that I don't want
+  //////////////////////////////////////
+  fConeRadius = 0.5;
+  fSeedThreshold = 1.0;
+  fConeAreaFraction = 1.0;
+  fMaxIterations = 100;
+  fMaxPairSize = 2;
+  fIratch = 1;
+  fAdjacencyCut = 2;
+  fOverlapThreshold = 0.75;
+  //-- N(sub;jettiness parameters --
+  fComputeNsubjettiness = false;
+  fBeta = 1.0;
+  fAxisMode = 1;
+  fRcutOff = 0.8; // used only if Njettiness is used as jet clustering algo (case 8)
+  fN = 2;                  // used only if Njettiness is used as jet clustering algo (case 8)
+  fMeasureDef = new NormalizedMeasure(fBeta, fParameterR);
+  switch(fAxisMode)
+  {
+    default:
+      case 1:
+        fAxesDef = new WTA_KT_Axes();
+        break;
+      case 2:
+        fAxesDef = new OnePass_WTA_KT_Axes();
+        break;
+      case 3:
+        fAxesDef = new KT_Axes();
+        break;
+      case 4:
+        fAxesDef = new OnePass_KT_Axes();
+   }
+  //-- Trimming parameters --
+  fComputeTrimming = false;
+  fRTrim = 0.2;
+  fPtFracTrim = 0.05;
+  //-- Pruning parameters --
+  fComputePruning = false;
+  fZcutPrun = 0.1;
+  fRcutPrun = 0.5;
+  fRPrun = 0.8;
+  //-- SoftDrop parameters --
+  fComputeSoftDrop     = false;
+  fBetaSoftDrop        = 0.0;
+  fSymmetryCutSoftDrop = 0.1;
+  fR0SoftDrop= 0.8;
+  // ---  Jet Area Parameters ---
+  fAreaAlgorithm = 0;
+  fComputeRho = false;
+  // - ghost based areas -
+  fGhostEtaMax = 5.0;
+  fRepeat = 1;
+  fGhostArea = 0.01;
+  fGridScatter = 1.0;
+  fPtScatter = 0.1;
+  fMeanGhostPt = 1.0E-100;
+  // - voronoi based areas -
+  fEffectiveRfact = 1.0;
+
+  switch(fAreaAlgorithm)
+  {
+    case 1:
+      fAreaDefinition = new AreaDefinition(active_area_explicit_ghosts, GhostedAreaSpec(fGhostEtaMax, fRepeat, fGhostArea, fGridScatter, fPtScatter, fMeanGhostPt));
+      break;
+    case 2:
+      fAreaDefinition = new AreaDefinition(one_ghost_passive_area, GhostedAreaSpec(fGhostEtaMax, fRepeat, fGhostArea, fGridScatter, fPtScatter, fMeanGhostPt));
+      break;
+    case 3:
+      fAreaDefinition = new AreaDefinition(passive_area, GhostedAreaSpec(fGhostEtaMax, fRepeat, fGhostArea, fGridScatter, fPtScatter, fMeanGhostPt));
+      break;
+    case 4:
+      fAreaDefinition = new AreaDefinition(VoronoiAreaSpec(fEffectiveRfact));
+      break;
+    case 5:
+      fAreaDefinition = new AreaDefinition(active_area, GhostedAreaSpec(fGhostEtaMax, fRepeat, fGhostArea, fGridScatter, fPtScatter, fMeanGhostPt));
+      break;
+    default:
+    case 0:
+      fAreaDefinition = 0;
+      break;
+  }
+
+  switch(fJetAlgorithm)
+  {
+    case 1:
+      plugin = new CDFJetCluPlugin(fSeedThreshold, fConeRadius, fAdjacencyCut, fMaxIterations, fIratch, fOverlapThreshold);
+      fDefinition = new JetDefinition(plugin);
+      break;
+    case 2:
+      plugin = new CDFMidPointPlugin(fSeedThreshold, fConeRadius, fConeAreaFraction, fMaxPairSize, fMaxIterations, fOverlapThreshold);
+      fDefinition = new JetDefinition(plugin);
+      break;
+    case 3:
+      plugin = new SISConePlugin(fConeRadius, fOverlapThreshold, fMaxIterations, fJetPTMin);
+      fDefinition = new JetDefinition(plugin);
+      break;
+    case 4:
+      fDefinition = new JetDefinition(kt_algorithm, fParameterR);
+      break;
+    case 5:
+      fDefinition = new JetDefinition(cambridge_algorithm, fParameterR);
+      break;
+    default:
+    case 6:
+      fDefinition = new JetDefinition(antikt_algorithm, fParameterR);
+      break;
+    case 7:
+      recomb = new WinnerTakeAllRecombiner();
+      fDefinition = new JetDefinition(antikt_algorithm, fParameterR, recomb, Best);
+      break;
+    case 8:
+      fNjettinessPlugin = new NjettinessPlugin(fN, Njettiness::wta_kt_axes, Njettiness::unnormalized_cutoff_measure, fBeta, fRcutOff);
+      fDefinition = new JetDefinition(fNjettinessPlugin);
+      break;
+  }
+
+  fPlugin = plugin;
+  fRecomb = recomb;
+  ClusterSequence::print_banner();
+
+  // import input array
+
+  //fInputArray = ImportArray(GetString("InputArray", "Calorimeter/towers"));
+  fInputArray = i_fInputArray; 
+  fItInputArray = fInputArray->MakeIterator();
+
+  // create output arrays
+
+  fOutputArray = new TObjArray(); 
+  fRhoOutputArray = new TObjArray(); 
+
+
+
+
+}
+
 //------------------------------------------------------------------------------
 
 void FastJetFinder::Init()
@@ -296,6 +448,105 @@ void FastJetFinder::Finish()
 }
 
 //------------------------------------------------------------------------------
+
+void FastJetFinder::ManualProcess()
+{
+  Candidate *candidate, *constituent;
+  TLorentzVector momentum;
+  Track *track;
+
+  Double_t deta, dphi, detaMax, dphiMax;
+  Double_t time, timeWeight;
+  Int_t number, ncharged, nneutrals;
+  Int_t charge; 
+  Double_t rho = 0.0;
+  PseudoJet jet, area;
+  ClusterSequence *sequence;
+  vector< PseudoJet > inputList, outputList, subjets;
+  vector< PseudoJet >::iterator itInputList, itOutputList;
+  vector< TEstimatorStruct >::iterator itEstimators;
+
+  inputList.clear();
+
+  DelphesFactory *factory = GetFactory();
+
+  // loop over input objects
+  // Turn them into pseudo jets
+  fItInputArray->Reset();
+  number = 0;
+  while((track = static_cast<Track*>(fItInputArray->Next()))){
+    std::cout << "Adding track" << std::endl;
+    momentum = track->P4(); //Momentum;
+    jet = PseudoJet(momentum.Px(), momentum.Py(), momentum.Pz(), momentum.E());
+    jet.set_user_index(number);
+    inputList.push_back(jet);
+    ++number;
+  }
+
+  // construct jets
+  std::cout << "ClusterSequence" << std::endl;
+  if(fAreaDefinition){
+    sequence = new ClusterSequenceArea(inputList, *fDefinition, *fAreaDefinition);
+  }
+  else{
+    sequence = new ClusterSequence(inputList, *fDefinition);
+  }
+
+  outputList.clear();
+  outputList = sorted_by_pt(sequence->inclusive_jets(fJetPTMin));
+
+  // loop over all jets and export them
+  detaMax = 0.0;
+  dphiMax = 0.0;
+  
+  // loop over sorted jets 
+  for(itOutputList = outputList.begin(); itOutputList != outputList.end(); ++itOutputList){
+    jet = *itOutputList;
+    momentum.SetPxPyPzE(jet.px(), jet.py(), jet.pz(), jet.E());
+    area.reset(0.0, 0.0, 0.0, 0.0);
+    if(fAreaDefinition) area = itOutputList->area_4vector();
+    //candidate = new Candidate(); 
+    //candidate = factory->NewCandidate();
+    time       = 0.0;
+    timeWeight = 0.0;
+    charge     = 0;
+    ncharged   = 0;
+    nneutrals  = 0;
+
+    // add iterators of the sorted output sequence to "inputList"
+    inputList.clear();
+    inputList = sequence->constituents(*itOutputList);
+
+    // loop over all constituents?
+    for(itInputList = inputList.begin(); itInputList != inputList.end(); ++itInputList){
+      if(itInputList->user_index() < 0) continue;
+      constituent = static_cast<Candidate*>(fInputArray->At(itInputList->user_index()));
+      //constituent = static_cast<Track*>(fInputArray->At(itInputList->user_index())); // WJF
+      deta = TMath::Abs(momentum.Eta() - constituent->Momentum.Eta());
+      dphi = TMath::Abs(momentum.DeltaPhi(constituent->Momentum));
+      if(deta > detaMax) detaMax = deta;
+      if(dphi > dphiMax) dphiMax = dphi;
+      if(constituent->Charge == 0) nneutrals++;
+      else ncharged++;
+      time += TMath::Sqrt(constituent->Momentum.E())*(constituent->Position.T());
+      timeWeight += TMath::Sqrt(constituent->Momentum.E());
+      charge += constituent->Charge;
+      candidate->AddCandidate(constituent);
+    }
+
+    candidate->Momentum = momentum;
+    candidate->Position.SetT(time/timeWeight);
+    candidate->Area.SetPxPyPzE(area.px(), area.py(), area.pz(), area.E());
+    candidate->DeltaEta = detaMax;
+    candidate->DeltaPhi = dphiMax;
+    candidate->Charge = charge; 
+    candidate->NNeutrals = nneutrals;
+    candidate->NCharged = ncharged;
+
+    fOutputArray->Add(candidate);
+  }
+  delete sequence;
+} // end ManualProcess
 
 void FastJetFinder::Process()
 {
