@@ -1,3 +1,4 @@
+TEST
 3.4.1:
 - added RadiusMax and HalfLengthMax to ParticlePropagator to keep decay products of the long-lived particles (#1084)
 - fixed compilation of Validation.cpp
