@@ -101,8 +101,6 @@ void VertexTrackAssociator::Process()
   float vertexZMax = vertexZ + vertexZerror;
   float vertexZMin = vertexZ - vertexZerror;
   
-  std::cout << "There are " << fTrackInputArray->GetEntriesFast() << " input tracks" << std::endl;
-  std::cout << "Primary bin information. z " << vertexZ << "\t[" << std::to_string(vertexZMin) << ", " << std::to_string(vertexZMax) << "]" << std::endl;
 
   // Match tracks to vertex 
   Candidate *track;
@@ -111,17 +109,14 @@ void VertexTrackAssociator::Process()
   while((track = static_cast<Candidate*>(fItTrackInputArray->Next())))
   {
 
-    std::cout << "\t" << itrack << " \t" << track->DZ << std::endl;
     itrack++;
     if(track->DZ < vertexZMax && track->DZ > vertexZMin)
     {
-      std::cout << "match" << std::endl;
       fOutputArray->Add(track);
     }
 
   }
 
-  std::cout << "There are " << fOutputArray->GetEntriesFast() << " matched tracks" << std::endl;
 
 }
 

@@ -87,7 +87,6 @@ void PrimaryBinFinder::Init()
   fBeamMaxZ = fBeamMaxWidth/2;
   fBeamMinZ = -1*fBeamMaxZ; 
 
-  std::cout << "nHistos: " << fNHistograms << " nbins: " << fNBins << " maxZ: " << fBeamMaxZ << " minZ: " << fBeamMinZ << std::endl;
 
   // import input array(s)
   fTrackInputArray   = ImportArray(GetString("InputArray", "TrackSmearing/tracks"));
@@ -208,7 +207,6 @@ void PrimaryBinFinder::Process()
       zBinWidth
     };
     
-    std::cout << "PrimaryBinFinder(): [" << zBinLow << ", " << zBinHigh << "]" << std::endl;
 
     binArray.push_back( std::make_pair( previousMaxPt, maxPtBin) );
 
@@ -224,7 +222,6 @@ void PrimaryBinFinder::Process()
     newVertex->ErrorDZ = binArray.at(ivertex).second.binWidth/2; // divide by 2, since error is +/-  
     newVertex->Position.SetXYZT(0.0, 0.0, newVertex->DZ, 0.0);
     newVertex->PositionError.SetXYZT(0.0, 0.0, newVertex->ErrorDZ, 0.0);
-    std::cout << "PrimaryBinFinder(): " << newVertex->DZ << " +/- " << newVertex->ErrorDZ << std::endl;
     fVertexOutputArray->Add(newVertex);
   }
 
