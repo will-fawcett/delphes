@@ -69,8 +69,7 @@
 #include "modules/VertexSorter.h"
 #include "modules/VertexFinder.h"
 #include "modules/VertexFinderDA4D.h"
-#include "modules/VertexTrackAssociator.h"
-#include "modules/PrimaryVertexFinder.h"
+#include "modules/PrimaryBinFinder.h"
 #include "modules/ExampleModule.h"
 
 #ifdef __CINT__
@@ -123,8 +122,7 @@
 #pragma link C++ class VertexSorter+;
 #pragma link C++ class VertexFinder+;
 #pragma link C++ class VertexFinderDA4D+;
-#pragma link C++ class VertexTrackAssociator+;
-#pragma link C++ class PrimaryVertexFinder+;
+#pragma link C++ class PrimaryBinFinder+;
 #pragma link C++ class ExampleModule+;
 
 #endif

@@ -16,10 +16,10 @@
  *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PrimaryVertexFinder_h
-#define PrimaryVertexFinder_h
+#ifndef PrimaryBinFinder_h
+#define PrimaryBinFinder_h
 
-/** \class PrimaryVertexFinder
+/** \class PrimaryBinFinder
  *
  *  Selects candidates from the InputArray according to the efficiency formula.
  *
@@ -34,12 +34,12 @@
 class TObjArray;
 class DelphesFormula;
 
-class PrimaryVertexFinder: public DelphesModule
+class PrimaryBinFinder: public DelphesModule
 {
 public:
 
-  PrimaryVertexFinder();
-  ~PrimaryVertexFinder();
+  PrimaryBinFinder();
+  ~PrimaryBinFinder();
 
   void Init();
   void Process();
@@ -50,13 +50,14 @@ private:
   Int_t fSearchAlgorithm;
   
   Int_t fBinWidth;
-  Int_t fBinWidth;
+  Int_t fBeamMaxWidth;
   Double_t fBinStepSize;
 
   Int_t fNBins;
   Int_t fNHistograms;
   Double_t fBeamMaxZ;
   Double_t fBeamMinZ;
+  Int_t fNumPrimaryBins;
 
 
   TIterator *fItTrackInputArray; //!
@@ -65,7 +66,7 @@ private:
   TObjArray *fVertexOutputArray; //!
   TObjArray *fTrackOutputArray; //!
 
-  ClassDef(PrimaryVertexFinder, 1)
+  ClassDef(PrimaryBinFinder, 1)
 };
 
 #endif

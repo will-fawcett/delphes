@@ -188,7 +188,6 @@ trackParameters$(ExeSuf): \
 
 tmp/analysis/trackParameters.$(ObjSuf): \
 	analysis/trackParameters.cpp \
-	modules/TestClass.h \
 	classes/DelphesClasses.h \
 	external/ExRootAnalysis/ExRootTreeReader.h \
 	external/ExRootAnalysis/ExRootResult.h \
@@ -409,6 +408,7 @@ tmp/modules/ModulesDict.$(SrcSuf): \
 	modules/VertexSorter.h \
 	modules/VertexFinder.h \
 	modules/VertexFinderDA4D.h \
+	modules/PrimaryBinFinder.h \
 	modules/ExampleModule.h
 tmp/modules/ModulesDict$(PcmSuf): \
 	tmp/modules/ModulesDict.$(SrcSuf)
@@ -642,6 +642,9 @@ tmp/modules/Cloner.$(ObjSuf): \
 	external/ExRootAnalysis/ExRootResult.h \
 	external/ExRootAnalysis/ExRootFilter.h \
 	external/ExRootAnalysis/ExRootClassifier.h
+tmp/modules/ClusteredJet.$(ObjSuf): \
+	modules/ClusteredJet.$(SrcSuf) \
+	modules/ClusteredJet.h
 tmp/modules/ConstituentFilter.$(ObjSuf): \
 	modules/ConstituentFilter.$(SrcSuf) \
 	modules/ConstituentFilter.h \
@@ -865,6 +868,15 @@ tmp/modules/PileUpMergerPythia8.$(ObjSuf): \
 	external/ExRootAnalysis/ExRootResult.h \
 	external/ExRootAnalysis/ExRootFilter.h \
 	external/ExRootAnalysis/ExRootClassifier.h
+tmp/modules/PrimaryBinFinder.$(ObjSuf): \
+	modules/PrimaryBinFinder.$(SrcSuf) \
+	modules/PrimaryBinFinder.h \
+	classes/DelphesClasses.h \
+	classes/DelphesFactory.h \
+	classes/DelphesFormula.h \
+	external/ExRootAnalysis/ExRootResult.h \
+	external/ExRootAnalysis/ExRootFilter.h \
+	external/ExRootAnalysis/ExRootClassifier.h
 tmp/modules/RecoPuFilter.$(ObjSuf): \
 	modules/RecoPuFilter.$(SrcSuf) \
 	modules/RecoPuFilter.h \
@@ -1065,6 +1077,7 @@ DELPHES_OBJ +=  \
 	tmp/modules/BeamSpotFilter.$(ObjSuf) \
 	tmp/modules/Calorimeter.$(ObjSuf) \
 	tmp/modules/Cloner.$(ObjSuf) \
+	tmp/modules/ClusteredJet.$(ObjSuf) \
 	tmp/modules/ConstituentFilter.$(ObjSuf) \
 	tmp/modules/Delphes.$(ObjSuf) \
 	tmp/modules/DenseTrackFilter.$(ObjSuf) \
@@ -1088,6 +1101,7 @@ DELPHES_OBJ +=  \
 	tmp/modules/PhotonConversions.$(ObjSuf) \
 	tmp/modules/PileUpJetID.$(ObjSuf) \
 	tmp/modules/PileUpMerger.$(ObjSuf) \
+	tmp/modules/PrimaryBinFinder.$(ObjSuf) \
 	tmp/modules/RecoPuFilter.$(ObjSuf) \
 	tmp/modules/SimpleCalorimeter.$(ObjSuf) \
 	tmp/modules/StatusPidFilter.$(ObjSuf) \
@@ -1771,6 +1785,10 @@ external/fastjet/ClusterSequenceActiveAreaExplicitGhosts.hh: \
 	external/fastjet/LimitedWarning.hh
 	@touch $@
 
+modules/PrimaryBinFinder.h: \
+	classes/DelphesModule.h
+	@touch $@
+
 modules/ConstituentFilter.h: \
 	classes/DelphesModule.h
 	@touch $@
@@ -1996,6 +2014,13 @@ modules/VertexSorter.h: \
 
 modules/Delphes.h: \
 	classes/DelphesModule.h
+	@touch $@
+
+modules/ClusteredJet.h: \
+	classes/DelphesClasses.h \
+	external/fastjet/PseudoJet.hh \
+	external/fastjet/JetDefinition.hh \
+	external/fastjet/ClusterSequence.hh
 	@touch $@
 
 modules/VertexFinder.h: \
