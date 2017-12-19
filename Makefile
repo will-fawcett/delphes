@@ -407,6 +407,7 @@ tmp/modules/ModulesDict.$(SrcSuf): \
 	modules/JetFakeParticle.h \
 	modules/VertexSorter.h \
 	modules/VertexFinder.h \
+	modules/VertexTrackAssociator.h \
 	modules/VertexFinderDA4D.h \
 	modules/PrimaryBinFinder.h \
 	modules/ExampleModule.h
@@ -1014,6 +1015,16 @@ tmp/modules/VertexSorter.$(ObjSuf): \
 	external/ExRootAnalysis/ExRootResult.h \
 	external/ExRootAnalysis/ExRootFilter.h \
 	external/ExRootAnalysis/ExRootClassifier.h
+tmp/modules/VertexTrackAssociator.$(ObjSuf): \
+	modules/VertexTrackAssociator.$(SrcSuf) \
+	modules/VertexTrackAssociator.h \
+	classes/DelphesClasses.h \
+	classes/DelphesFactory.h \
+	classes/DelphesFormula.h \
+	classes/DelphesPileUpReader.h \
+	external/ExRootAnalysis/ExRootResult.h \
+	external/ExRootAnalysis/ExRootFilter.h \
+	external/ExRootAnalysis/ExRootClassifier.h
 tmp/modules/Weighter.$(ObjSuf): \
 	modules/Weighter.$(SrcSuf) \
 	modules/Weighter.h \
@@ -1118,6 +1129,7 @@ DELPHES_OBJ +=  \
 	tmp/modules/VertexFinder.$(ObjSuf) \
 	tmp/modules/VertexFinderDA4D.$(ObjSuf) \
 	tmp/modules/VertexSorter.$(ObjSuf) \
+	tmp/modules/VertexTrackAssociator.$(ObjSuf) \
 	tmp/modules/Weighter.$(ObjSuf)
 
 ifeq ($(HAS_PYTHIA8),true)
@@ -1984,6 +1996,10 @@ external/fastjet/version.hh: \
 	@touch $@
 
 modules/MomentumSmearing.h: \
+	classes/DelphesModule.h
+	@touch $@
+
+modules/VertexTrackAssociator.h: \
 	classes/DelphesModule.h
 	@touch $@
 

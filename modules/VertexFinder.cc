@@ -212,6 +212,7 @@ void VertexFinder::createSeeds ()
   // Sort tracks by pt and leave only the SeedMinPT highest pt ones in the
   // trackPT vector.
   sort (trackPT.begin (), trackPT.end (), secondDescending);
+  // WJF: this for loop doesn't seem to do anything, suggest removal? 
   for (vector<pair<UInt_t, Double_t> >::const_iterator track = trackPT.begin (); track != trackPT.end (); track++, maxSeeds++)
     {
       if (track->second < fSeedMinPT)
@@ -316,6 +317,10 @@ void VertexFinder::growCluster (const UInt_t clusterIndex)
 
 Double_t VertexFinder::weight (const UInt_t trackID)
 {
+  // WJF: pt / error_pt * error_z * pt / error_pt * error_z 
+  // which I think translates to: (pt / error_pt) * (error_z * error_z * pt)/error_pt 
+  // = (pt**2 * error_z **2) / (error_pt ** 2) 
+  // = (pt/error_pt)**2 * error_z**2 
   return ((trackIDToDouble.at (trackID).at ("pt") / (trackIDToDouble.at (trackID).at ("ept") * trackIDToDouble.at (trackID).at ("ez"))) * (trackIDToDouble.at (trackID).at ("pt") / (trackIDToDouble.at (trackID).at ("ept") * trackIDToDouble.at (trackID).at ("ez"))));
 }
 

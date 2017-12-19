@@ -68,6 +68,7 @@
 #include "modules/JetFakeParticle.h"
 #include "modules/VertexSorter.h"
 #include "modules/VertexFinder.h"
+#include "modules/VertexTrackAssociator.h"
 #include "modules/VertexFinderDA4D.h"
 #include "modules/PrimaryBinFinder.h"
 #include "modules/ExampleModule.h"
@@ -121,6 +122,7 @@
 #pragma link C++ class JetFakeParticle+;
 #pragma link C++ class VertexSorter+;
 #pragma link C++ class VertexFinder+;
+#pragma link C++ class VertexTrackAssociator+;
 #pragma link C++ class VertexFinderDA4D+;
 #pragma link C++ class PrimaryBinFinder+;
 #pragma link C++ class ExampleModule+;

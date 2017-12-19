@@ -87,6 +87,8 @@ void PrimaryBinFinder::Init()
   fBeamMaxZ = fBeamMaxWidth/2;
   fBeamMinZ = -1*fBeamMaxZ; 
 
+  std::cout << "nHistos: " << fNHistograms << " nbins: " << fNBins << " maxZ: " << fBeamMaxZ << " minZ: " << fBeamMinZ << std::endl;
+
   // import input array(s)
   fTrackInputArray   = ImportArray(GetString("InputArray", "TrackSmearing/tracks"));
   fItTrackInputArray = fTrackInputArray->MakeIterator();
@@ -110,10 +112,10 @@ void PrimaryBinFinder::Finish()
 
 struct bin
 {
-  float binLowEdge;
-  float binUpEdge;
-  float binCenter;
-  float binWidth;
+  Double_t binLowEdge;
+  Double_t binUpEdge;
+  Double_t binCenter;
+  Double_t binWidth;
 };
 
 std::string formatBin(const bin& ibin){
@@ -140,7 +142,6 @@ void printVec(std::vector<std::pair<float, bin> >& vec){
 void PrimaryBinFinder::Process()
 {
   Candidate *candidate;
-  TLorentzVector candidatePosition, candidateMomentum;
 
   // Define histograms for sliding window alg. 
   std::vector<TH1F*> windowHists;
@@ -155,6 +156,7 @@ void PrimaryBinFinder::Process()
     for(int i=0; i<fNHistograms; ++i) windowHists.at(i)->Fill(candidate->DZ, candidate->PT);
   }
 
+  // loop over all candidates (tracks), extract sum(pT) information from each bin 
   std::vector< std::pair< float, bin > > binArray; 
   binArray.clear();
   if(fNumPrimaryBins > 1){
@@ -205,6 +207,8 @@ void PrimaryBinFinder::Process()
       zBinCenter,
       zBinWidth
     };
+    
+    std::cout << "PrimaryBinFinder(): [" << zBinLow << ", " << zBinHigh << "]" << std::endl;
 
     binArray.push_back( std::make_pair( previousMaxPt, maxPtBin) );
 
@@ -216,10 +220,11 @@ void PrimaryBinFinder::Process()
   for(int ivertex=0; ivertex<fNumPrimaryBins; ++ivertex){
     Candidate *newVertex;
     newVertex = factory->NewCandidate();
-    newVertex->DZ      = binArray.at(ivertex).second.binLowEdge;
-    newVertex->ErrorDZ = binArray.at(ivertex).second.binWidth;
+    newVertex->DZ      = binArray.at(ivertex).second.binCenter;
+    newVertex->ErrorDZ = binArray.at(ivertex).second.binWidth/2; // divide by 2, since error is +/-  
     newVertex->Position.SetXYZT(0.0, 0.0, newVertex->DZ, 0.0);
     newVertex->PositionError.SetXYZT(0.0, 0.0, newVertex->ErrorDZ, 0.0);
+    std::cout << "PrimaryBinFinder(): " << newVertex->DZ << " +/- " << newVertex->ErrorDZ << std::endl;
     fVertexOutputArray->Add(newVertex);
   }
 
