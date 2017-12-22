@@ -48,6 +48,11 @@
 #include <stdexcept>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
+
+#include "TGraph.h"
+#include "TCanvas.h"
+#include "TAxis.h"
 
 using namespace std;
 
@@ -75,10 +80,64 @@ SimpleCalorimeter::~SimpleCalorimeter()
  
 }
 
+bool is_integer(float k)
+{
+  return std::floor(k) == k;
+}
+
+double moduleTheta(const double radius, const double xposition){
+  return asin( radius / sqrt( xposition*xposition + radius*radius) );
+}
+
+double theta_to_eta(const double theta){
+  return -log( tan ( theta/2) );
+}
+
+std::vector<double> moduleEtaArray(const double radius, const double barrelLength, const double pixelLength){
+
+  // calculate number of modules along tracker barrel length
+  float nModulesF = barrelLength / pixelLength;
+  int nModules(0);
+  // nmodules must be an int 
+  if(is_integer(nModulesF)){
+    nModules = static_cast<int>(nModulesF);
+  }
+  else{
+    std::cout << "Warning: number of modules not an integer, rounding up" << std::endl;
+    nModules = static_cast<int>(ceil(nModulesF));
+    std::cout << nModulesF << " -> " << nModules << std::endl;
+  }
+  //std::cout << "with barrel " << barrelLength << " and  pixel size " << pixelLength << " there will be " << nModules << " modules." << std::endl;
+
+  // theta (and eta) coordinate of edges of modules
+  //std::cout << "module\tx\ttheta\teta" << std::endl;
+  //std::cout << std::setprecision(9); 
+  vector<double> etaPositions; 
+  for(int i=0; i<nModules;++i){
+    double xposition = barrelLength - (i * pixelLength);
+    double theta = moduleTheta(radius, xposition);
+    double eta = theta_to_eta(theta); 
+    //std::cout << i << "\t" << xposition << "\t" << theta << "\t" << eta << std::endl;
+    etaPositions.push_back(eta);
+  }
+
+  // add the eta positions for the other side of the tracker 
+  for(auto pos : etaPositions){
+    etaPositions.push_back(-1*pos);
+  }
+  
+  // add the eta position for the module in the center
+  etaPositions.push_back(0.0);
+
+  return etaPositions; 
+}
+
+
 //------------------------------------------------------------------------------
 
 void SimpleCalorimeter::Init()
 {
+  std::cout << "SimpleCalorimeter::Init() Begin" << std::endl;
   ExRootConfParam param, paramEtaBins, paramPhiBins, paramFractions;
   Long_t i, j, k, size, sizeEtaBins, sizePhiBins;
   Double_t fraction;
@@ -86,12 +145,35 @@ void SimpleCalorimeter::Init()
   set< Double_t >::iterator itPhiBin;
   vector< Double_t > *phiBins;
 
+  // WJF (hack): add extra parameter to emulate tracker
+  fTrackerRadius = GetDouble("TrackerRadius", 532); // [mm] 
+  // L1 532.00, L2 582.00, L3 632.00
+  fPixelSize     = GetDouble("PixelSize", 40); // [um] 
+  fTrackerLength = GetDouble("TrackerLength", 2250); // [mm]
+
+  // convert pixel size to mm
+  fPixelSize *= 0.001;
+
+  // Calcualte phi separation for tracker modules based on tracer radius and pixel size
+  fTrackerPhi = atan2( fPixelSize , fTrackerRadius);
+
+  // generate list of numbers from -pi -> pi with spacing fTrackerPhi
+  std::vector<double> phiPositions;
+  for(float iphi= -1*M_PI; iphi<M_PI; iphi+=fTrackerPhi){
+    phiPositions.push_back(iphi);
+  }
+
+  // array of eta positions for module edges, based on tracker radius, length and pixel size 
+  vector<double> etaPositions = moduleEtaArray(fTrackerRadius, fTrackerLength, fPixelSize);
+
+
   // read eta and phi bins
   param = GetParam("EtaPhiBins");
   size = param.GetSize();
   fBinMap.clear();
   fEtaBins.clear();
   fPhiBins.clear();
+  /******* WJF skip this loop, overwritten anyway 
   for(i = 0; i < size/2; ++i)
   {
     paramEtaBins = param[i*2];
@@ -107,9 +189,65 @@ void SimpleCalorimeter::Init()
       }
     }
   }
+  ************************/
+
+  // Overwrite above
+  std::cout << "SimpleCalorimeter::Init() Begin mapping eta and phi positions." << std::endl; 
+  std::cout << "map max size: " << fBinMap.max_size() << std::endl; 
+  fBinMap.clear();
+  /*********** WJF: takes too much memory to use such a map 
+  for(int ieta=0; ieta<etaPositions.size();++ieta){
+    for(int iphi=0; iphi<phiPositions.size(); ++iphi){
+      fBinMap[etaPositions[ieta]].insert( phiPositions[iphi] );
+    }
+  }
+  ************/
+  std::cout << "SimpleCalorimeter::Init() Finished mapping eta and phi positions." << std::endl; 
+
+  /************************
+  TGraph * gr = new TGraph();
+  TGraph * gr_theta_phi = new TGraph();
+  int counter(0);
+  // WJF print out calo mapping 
+  std::cout << "Calorimeter::Init()" << std::endl;
+  for(auto it = fBinMap.cbegin(); it != fBinMap.cend(); ++it)
+  {
+    auto theSet = it->second;
+    std::cout << "\n" << it->first << ": " << theSet.size() << " elements" << std::endl;
+    std::cout << "\t";
+    for(auto element : theSet){
+      std::cout << element <<", ";
+      // eta = it->first
+      // phi = element 
+      gr->SetPoint(counter, it->first, element);
+      gr_theta_phi->SetPoint(counter, 2*atan( exp( -1*it->first) ) , element);
+      counter++;
+    }
+    std::cout << std::endl;
+  } 
+
+  TCanvas * tempCan = new TCanvas("can", "can", 500, 500);
+  gr->Draw("AP");
+  gr->GetXaxis()->SetTitle("#eta");
+  gr->GetYaxis()->SetTitle("#phi");
+  tempCan->SaveAs("Calo.pdf");
+  tempCan->SaveAs("Calo.root");
+  tempCan->SaveAs("Calo.C");
+
+  gr_theta_phi->Draw("AP");
+  gr_theta_phi->GetXaxis()->SetTitle("#theta");
+  gr_theta_phi->GetYaxis()->SetTitle("#phi");
+  tempCan->SaveAs("Calo_theta.pdf");
+  tempCan->SaveAs("Calo_theta.root");
+  tempCan->SaveAs("Calo_theta.C");
+
+  delete gr;
+  delete tempCan;
+  *******************/
 
   // for better performance we transform map of sets to parallel vectors:
   // vector< double > and vector< vector< double >* >
+  /********* WJF: default method below
   for(itEtaBin = fBinMap.begin(); itEtaBin != fBinMap.end(); ++itEtaBin)
   {
     fEtaBins.push_back(itEtaBin->first);
@@ -121,6 +259,20 @@ void SimpleCalorimeter::Init()
       phiBins->push_back(*itPhiBin);
     }
   }
+  *********************/
+
+  // WJF: my own implementation
+  std::cout << "SimpleCalorimeter::Init() Begin vectorizing eta and phi positions." << std::endl; 
+  for(auto eta : etaPositions){
+    fEtaBins.push_back(eta); 
+    phiBins = new std::vector< double >(etaPositions.size());
+    fPhiBins.push_back(phiBins);
+    phiBins->clear();
+    for(auto phi : phiPositions){
+      phiBins->push_back(phi);
+    }
+  }
+  std::cout << "SimpleCalorimeter::Init() Finished vectorizing eta and phi positions." << std::endl; 
 
   // read energy fractions for different particles
   param = GetParam("EnergyFraction");
@@ -163,6 +315,8 @@ void SimpleCalorimeter::Init()
 
   fEFlowTrackOutputArray = ExportArray(GetString("EFlowTrackOutputArray", "eflowTracks"));
   fEFlowTowerOutputArray = ExportArray(GetString("EFlowTowerOutputArray", "eflowTowers"));
+
+  std::cout << "SimpleCalorimeter::Init() End" << std::endl;
 }
 
 //------------------------------------------------------------------------------

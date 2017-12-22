@@ -118,6 +118,19 @@ void Calorimeter::Init()
     }
   }
 
+  //typedef std::map< Double_t, std::set< Double_t > > TBinMap; //!
+  // print fBinMap
+  std::cout << "Calorimeter::Init()" << std::endl;
+  for(auto it = fBinMap.cbegin(); it != fBinMap.cend(); ++it)
+  {
+    std::cout << it->first << std::endl;
+    auto theSet = it->second;
+    for(auto element : theSet){
+      std::cout << "\t" << element << std::endl;
+    }
+  }
+
+
   // for better performance we transform map of sets to parallel vectors:
   // vector< double > and vector< vector< double >* >
   for(itEtaBin = fBinMap.begin(); itEtaBin != fBinMap.end(); ++itEtaBin)
@@ -204,6 +217,8 @@ void Calorimeter::Finish()
 
 void Calorimeter::Process()
 {
+
+  std::cout << "Calorimeter::Process()" << std::endl;
   Candidate *particle, *track;
   TLorentzVector position, momentum;
   Short_t etaBin, phiBin, flags;

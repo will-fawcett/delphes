@@ -55,6 +55,14 @@ private:
   typedef std::map< Long64_t, Double_t > TFractionMap; //!
   typedef std::map< Double_t, std::set< Double_t > > TBinMap; //!
 
+  // WJF added variables
+  Double_t fTrackerRadius;
+  Double_t fPixelSize;
+  Double_t fTrackerLength;
+  Double_t fTrackerPhi;
+  /////////////////////
+
+
   Candidate *fTower;
   Double_t fTowerEta, fTowerPhi, fTowerEdges[4];
   Double_t fTowerEnergy;
