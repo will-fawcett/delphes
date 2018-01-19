@@ -43,12 +43,13 @@ private:
   const TObjArray *fBeamSpotInputArray; //!
   TIterator *fItInputArray;
 
-  Double_t fBz; // magnetic field in z direction 
-  Double_t fBarrelLength; 
-  Double_t fDiscHeight;
-  Double_t fTrackPtMin;
+  Double_t fBz; // magnetic field in z direction [T]
+  Double_t fBarrelLength; // length of the tracker barrel [m] (only in the positive z direction, so it's the "half length") 
+  Double_t fTrackPtMin; // minimum track pT to be considered 
+  Double_t fEndCapRadius; // raduis of endcap discs [m] 
 
   std::vector<Barrel> fBarrelLayers;
+  std::vector<float> fEndcapZPositions; 
 
 
   TObjArray *fOutputArray;

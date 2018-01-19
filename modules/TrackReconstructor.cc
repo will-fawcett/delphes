@@ -36,9 +36,15 @@
 #include <algorithm>
 #include <stdexcept>
 #include <iostream>
+#include <iomanip>
 #include <vector>
 #include <map>
 #include <string>
+
+// testing
+#include "TCanvas.h"
+#include "TH3.h"
+#include "TGraph2D.h"
 
 using namespace std;
 
@@ -48,7 +54,7 @@ using namespace std;
 //------------------------------------------------------------------------------
 
 TrackReconstructor::TrackReconstructor() :
-  fBarrelLength(0), fDiscHeight(0)
+  fBarrelLength(0), fEndCapRadius(0)
 {
 }
 
@@ -80,6 +86,7 @@ void TrackReconstructor::Init()
     fBeamSpotInputArray = 0;
   }
 
+  
   fBz = GetDouble("Bz", 0.0);
 
   // Input parameters
@@ -92,7 +99,7 @@ void TrackReconstructor::Init()
   // parameters for barrel layers
   ///////////////////////////////
   fBarrelLength = GetDouble("BarrelLength", 1.0); // barrel length [m]
-  ExRootConfParam barrelLayersParam = GetParam("BarrelLayerRadii"); // barrel layer radii [mm]
+  ExRootConfParam barrelLayersParam = GetParam("BarrelLayerRadii"); // barrel layer radii [m]
   ExRootConfParam barrelLayerPixelLengthParam = GetParam("BarrelLayerPixelLength"); // pixel length [um]
   ExRootConfParam barrelLayerPixelWidthParam = GetParam("BarrelLayerPixelWidth"); // pixel width [um]
   
@@ -109,9 +116,21 @@ void TrackReconstructor::Init()
     fBarrelLayers.push_back(tempBarrel); 
   }
 
+  ///////////////////////////////
   // parameters for endcap layers
+  ///////////////////////////////
+  ExRootConfParam endcapZPositions = GetParam("EndCapZ"); // z positions of the endcaps. Only needed in the positive sense (symmetry assumed) 
+  fEndCapRadius = GetDouble("EndCapRadius", 1.0); // end cap radius [m] 
 
-  
+  // Make sure the user only put in positive values for endcap
+  // If an asymetrical tracker design was needed, then a hack would be required
+  for(int i=0; i<endcapZPositions.GetSize(); ++i){
+    if( endcapZPositions[i].GetDouble() < 0.0){
+      std::cout << "WARNIGN: TrackReconstructor: Negative endcap z positions detected, which will be ignored. The user need only input positive values, and a symmetrical detector design is assumed." << std::endl;
+      continue;
+    }
+    fEndcapZPositions.push_back( endcapZPositions[i].GetDouble() ); 
+  }
 
 
 
@@ -131,12 +150,13 @@ void TrackReconstructor::Finish()
 // or is it that this function will loop over all candidates in the event? 
 std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax)
 {
+  std::cout << "ParticlePropagator() radius: " << RADIUS_MAX << " half length: " << HalfLengthMax << std::endl;
 
   std::vector<TLorentzVector> hitPositions;
 
   Candidate *candidate, *mother;
   TLorentzVector candidatePosition, candidateMomentum, beamSpotPosition;
-  Double_t px, py, pz, pt, pt2, e, q;
+  Double_t px, py, pz, pt, pt2, e, charge;
   Double_t x, y, z, t, r, phi;
   Double_t x_c, y_c, r_c, phi_c, phi_0;
   Double_t x_t, y_t, z_t, r_t;
@@ -150,6 +170,7 @@ std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_
 
   int numCandidates(0);
   int numCandidatesWithPtMin(0);
+  int numCandidatesInCylinder(0);
 
   const Double_t c_light = 2.99792458E8;
 
@@ -161,6 +182,7 @@ std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_
     beamSpotPosition = beamSpotCandidate.Position;
   }
 
+  // process all candidates 
   fItInputArray->Reset();
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
   {
@@ -175,13 +197,15 @@ std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_
     bsy = beamSpotPosition.Y()*1.0E-3;
     bsz = beamSpotPosition.Z()*1.0E-3;
 
-    q = candidate->Charge;
+    charge = candidate->Charge;
 
-    // check that particle position is inside the cylinder
-    if(TMath::Hypot(x, y) > RADIUS_MAX || TMath::Abs(z) > HalfLengthMax)
-    {
+    // Check that particle position is inside the cylinder that defines the detector volume 
+    // (it could be a decayed particle that originates outside?) 
+    // NB TMath::Hypot(x, y) calculates hypotenuse see https://en.wikipedia.org/wiki/Hypot 
+    if(TMath::Hypot(x, y) > RADIUS_MAX || TMath::Abs(z) > HalfLengthMax){
       continue;
     }
+    numCandidatesInCylinder++;
 
     px = candidateMomentum.Px();
     py = candidateMomentum.Py();
@@ -190,14 +214,18 @@ std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_
     pt2 = candidateMomentum.Perp2();
     e = candidateMomentum.E();
 
-    if(pt2 < 1.0E-9)
-    {
+    if(pt2 < 1.0E-9){
       continue;
     }
 
     // WJF: make sure particle has sufficient momentum
+    // Is this an OK cut to make, what about a K-long for example? This might decay somewhere withing the tracking volume, and the decayed particles would still leave hits, but could have pT < 1 GeV?
+    // Something this this would certainly contribute to fakes ... ? 
     if(pt < fTrackPtMin) continue;  
     numCandidatesWithPtMin++;
+
+    // Were only interested in charged particles, since we're looking for hits 
+    if(TMath::Abs(charge) < 1.0E-9) continue; 
 
     if(TMath::Hypot(x, y) > RADIUS_MAX || TMath::Abs(z) > HalfLengthMax)
     {
@@ -213,7 +241,7 @@ std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_
 
       //fOutputArray->Add(candidate); // WJF dont need to modify output here
     }
-    else if(TMath::Abs(q) < 1.0E-9 || TMath::Abs(fBz) < 1.0E-9)
+    else if(TMath::Abs(charge) < 1.0E-9 || TMath::Abs(fBz) < 1.0E-9)
     {
       // solve pt2*t^2 + 2*(px*x + py*y)*t - (fRadius2 - x*x - y*y) = 0
       tmp = px*y - py*x;
@@ -250,28 +278,30 @@ std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_
 
       candidate->InitialPosition = candidatePosition;
       candidate->Position.SetXYZT(x_t*1.0E3, y_t*1.0E3, z_t*1.0E3, candidatePosition.T() + t*e*1.0E3);
-      hitPositions.push_back( candidate->Position ); 
       candidate->L = l*1.0E3;
 
       candidate->Momentum = candidateMomentum;
       candidate->AddCandidate(mother);
 
       //fOutputArray->Add(candidate); // dont need to modify output array here
-      if(TMath::Abs(q) > 1.0E-9)
+      if(TMath::Abs(charge) > 1.0E-9)
       {
-        /****************
+        std::cout << "bit that should never be entered" << std::endl; 
+        std::cout << "Charge: " << TMath::Abs(charge) << " fbz: " <<  TMath::Abs(fBz) << std::endl;
         switch(TMath::Abs(candidate->PID))
         {
           case 11:
             //fElectronOutputArray->Add(candidate);
+            hitPositions.push_back( candidate->Position ); 
             break;
           case 13:
             //fMuonOutputArray->Add(candidate);
+            hitPositions.push_back( candidate->Position ); 
             break;
           default:
             //fChargedHadronOutputArray->Add(candidate);
+            hitPositions.push_back( candidate->Position ); 
         }
-        *************/
       }
       else
       {
@@ -288,8 +318,8 @@ std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_
       //     helix radius r = p_{T0} / (omega gamma m)
 
       gammam = e*1.0E9 / (c_light*c_light);      // gammam in [eV/c^2]
-      omega = q * fBz / (gammam);                // omega is here in [89875518/s]
-      r = pt / (q * fBz) * 1.0E9/c_light;        // in [m]
+      omega = charge * fBz / (gammam);                // omega is here in [89875518/s]
+      r = pt / (charge * fBz) * 1.0E9/c_light;        // in [m]
 
       phi_0 = TMath::ATan2(py, px); // [rad] in [-pi, pi]
 
@@ -408,43 +438,90 @@ std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_
 
         candidate->AddCandidate(mother);
 
-        /************************
-         * WJF: remove output
+
         //fOutputArray->Add(candidate);
         switch(TMath::Abs(candidate->PID))
         {
           case 11:
             //fElectronOutputArray->Add(candidate);
+            hitPositions.push_back( candidate->Position ); 
             break;
           case 13:
             //fMuonOutputArray->Add(candidate);
+            hitPositions.push_back( candidate->Position ); 
             break;
           default:
             //fChargedHadronOutputArray->Add(candidate);
+            hitPositions.push_back( candidate->Position ); 
         }
-        ***********************/
       }
     }
   }
-  std::cout << "Out of " << numCandidates << " candidate particles (to propagate)" << std::endl;
-  std::cout << numCandidatesWithPtMin << " had pT greater than the minimum threshold: " << fTrackPtMin << " GeV" << std::endl;
-  std::cout << "From these tracks, " << hitPositions.size()  << " hits were found" << std::endl;
+  //std::cout << "Out of " << numCandidates << " candidate particles (to propagate)" << std::endl;
+  //std::cout << "Numbner of candidates inside cylinder " << numCandidatesInCylinder << std::endl;
+  //std::cout << numCandidatesWithPtMin << " had pT greater than the minimum threshold: " << fTrackPtMin << " GeV" << std::endl;
+  //std::cout << "From these tracks, " << hitPositions.size()  << " hits were found" << std::endl;
   return hitPositions; 
 }
 
 void TrackReconstructor::Process()
 {
 
+  TCanvas *can = new TCanvas("can", "can", 500, 500);
+  //TH3D *hitMap = new TH3D("hitmap", "title:x:y:z", 100, -2000, 2000, 100, -2000, 2000, 100, -4000, 4000); // hits seem to be recorded in mm 
+  TGraph2D *hitMap = new TGraph2D();
+
+  
   // Creat hits for all barrel layers
+  int hitNumber(0);
   for(auto barrel : fBarrelLayers){
-    std::vector<TLorentzVector> hits;
+    std::vector<TLorentzVector> hits, surfaceHits;
     float radius = barrel.GetRadius();
     hits = ParticlePropagator(radius, fBarrelLength); // all barrels have the same length 
-    for(int i=0;i<5;++i){
-      std::cout << hits.at(i).X() << std::endl;
+
+    std::cout << hits.size() << " hits found from PP" << std::endl;
+
+    std::cout << std::setprecision(9);
+    // remove the endcaps
+    double largestRadius(0);
+    for(auto hit : hits){
+      //std::cout << hit.X() << ", " << hit.Y() << ", " << hit.Z() << ", " << hit.Perp() << "\t" << radius*1E3  << std::endl;
+      if( fabs(hit.Perp()) < 0.9999*radius*1E3) continue; // 0.9999 since radii of hit is slightly smaller than radii of surface
+      surfaceHits.push_back(hit);
     }
-    std::cout << "" << std::endl;
+
+    std::cout << "Largest hit radius is: " << largestRadius  << std::endl;
+    std::cout << surfaceHits.size() << " hits on barrel surface" << std::endl;
+
+    for(auto hit : surfaceHits){
+      hitMap->SetPoint(hitNumber, hit.X(), hit.Y(), hit.Z());
+      hitNumber++;
+    }
   }
+
+  // Create hits for endcap layers
+  for(auto endcapZ : fEndcapZPositions){
+    std::vector<TLorentzVector> hits, surfaceHits;
+    hits = ParticlePropagator(fEndCapRadius, endcapZ); 
+
+    // remove the barrel layers
+    for(auto hit : hits){
+      if( fabs( hit.Z() ) < 0.9999*endcapZ*1E3) continue;
+      surfaceHits.push_back(hit);
+    }
+
+    for(auto hit : surfaceHits){
+      //hitMap->Fill( hit.X(), hit.Y(), hit.Z() );
+      hitMap->SetPoint(hitNumber, hit.X(), hit.Y(), hit.Z());
+      hitNumber++;
+    }
+  }
+    
+
+  hitMap->Draw("AP");
+  can->SaveAs("hitMapTest.pdf");
+  hitMap->Write();
+  hitMap->SaveAs("hitMapTest.root");
 
   // WJF: currently leftover -- TO DELETE 
   // Create hits from tracks 
