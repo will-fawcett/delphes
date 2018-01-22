@@ -33,7 +33,7 @@ public:
   void Init();
   void Process();
   void Finish();
-  std::vector<TLorentzVector> ParticlePropagator(float, float);
+  std::vector<TLorentzVector> ParticlePropagator(float, float, bool, bool);
 
 private:
 
@@ -52,7 +52,7 @@ private:
   std::vector<float> fEndcapZPositions; 
 
 
-  TObjArray *fOutputArray;
+  TObjArray *fHitOutputArray;
 
   ClassDef(TrackReconstructor, 1)
 };

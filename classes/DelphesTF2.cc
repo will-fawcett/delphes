@@ -17,10 +17,8 @@
  */
 
 #include "classes/DelphesTF2.h"
-
 #include "RVersion.h"
 #include "TString.h"
-
 #include <stdexcept>
 
 using namespace std;

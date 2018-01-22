@@ -496,6 +496,27 @@ public:
 
 //---------------------------------------------------------------------------
 
+class Hit : public SortableObject
+{
+public:
+  // coordinates of hit 
+  Float_t X;
+  Float_t Y;
+  Float_t Z; 
+  Float_t T;  
+
+  TRef Particle; // reference to generated particle
+
+  static CompBase *fgCompare; //!
+  const CompBase *GetCompare() const { return fgCompare; }
+
+  ClassDef(Hit, 1)
+};
+
+
+
+//---------------------------------------------------------------------------
+
 class HectorHit: public SortableObject
 {
 public:

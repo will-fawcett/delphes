@@ -93,7 +93,7 @@ void TrackReconstructor::Init()
   fTrackPtMin = GetDouble("TrackPtMin", 1.0); // minimum track pT threshold [GeV]
 
   // Output arrays 
-  fOutputArray = ExportArray(GetString("OutputArray", "tracks"));
+  fHitOutputArray = ExportArray(GetString("OutputArray", "hits"));
 
   ///////////////////////////////
   // parameters for barrel layers
@@ -148,7 +148,7 @@ void TrackReconstructor::Finish()
 // assume that, even though the calling of ParticlePropagator is done inside Process()
 // that it behaves (in terms of retrieving the particles to propagate) in the same way as though this was calling Process() multiple times? 
 // or is it that this function will loop over all candidates in the event? 
-std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax)
+std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, bool removeEndcaps, bool removeBarrel)
 {
   std::cout << "ParticlePropagator() radius: " << RADIUS_MAX << " half length: " << HalfLengthMax << std::endl;
 
@@ -439,20 +439,32 @@ std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_
         candidate->AddCandidate(mother);
 
 
+        if(removeEndcaps){
+          if( fabs(candidate->Position.Perp()) < 0.9999*RADIUS_MAX*1E3) continue; // 0.9999 since radii of hit is slightly smaller than radii of surface
+        }
+
+        if(removeBarrel){
+          if( fabs( candidate->Position.Z() ) < 0.9999*HalfLengthMax*1E3) continue;
+        }
+
+
         //fOutputArray->Add(candidate);
         switch(TMath::Abs(candidate->PID))
         {
           case 11:
             //fElectronOutputArray->Add(candidate);
             hitPositions.push_back( candidate->Position ); 
+            fHitOutputArray->Add(candidate);
             break;
           case 13:
             //fMuonOutputArray->Add(candidate);
             hitPositions.push_back( candidate->Position ); 
+            fHitOutputArray->Add(candidate);
             break;
           default:
             //fChargedHadronOutputArray->Add(candidate);
             hitPositions.push_back( candidate->Position ); 
+            fHitOutputArray->Add(candidate);
         }
       }
     }
@@ -477,21 +489,13 @@ void TrackReconstructor::Process()
   for(auto barrel : fBarrelLayers){
     std::vector<TLorentzVector> hits, surfaceHits;
     float radius = barrel.GetRadius();
-    hits = ParticlePropagator(radius, fBarrelLength); // all barrels have the same length 
+    bool removeEndcaps(true);
+    bool removeBarrel(false);
+    hits = ParticlePropagator(radius, fBarrelLength, removeEndcaps, removeBarrel); // all barrels have the same length 
 
-    std::cout << hits.size() << " hits found from PP" << std::endl;
-
-    std::cout << std::setprecision(9);
-    // remove the endcaps
-    double largestRadius(0);
     for(auto hit : hits){
-      //std::cout << hit.X() << ", " << hit.Y() << ", " << hit.Z() << ", " << hit.Perp() << "\t" << radius*1E3  << std::endl;
-      if( fabs(hit.Perp()) < 0.9999*radius*1E3) continue; // 0.9999 since radii of hit is slightly smaller than radii of surface
       surfaceHits.push_back(hit);
     }
-
-    std::cout << "Largest hit radius is: " << largestRadius  << std::endl;
-    std::cout << surfaceHits.size() << " hits on barrel surface" << std::endl;
 
     for(auto hit : surfaceHits){
       hitMap->SetPoint(hitNumber, hit.X(), hit.Y(), hit.Z());
@@ -502,11 +506,13 @@ void TrackReconstructor::Process()
   // Create hits for endcap layers
   for(auto endcapZ : fEndcapZPositions){
     std::vector<TLorentzVector> hits, surfaceHits;
-    hits = ParticlePropagator(fEndCapRadius, endcapZ); 
+    bool removeEndcaps(false);
+    bool removeBarrel(true);
+    hits = ParticlePropagator(fEndCapRadius, endcapZ, removeEndcaps, removeBarrel); 
 
     // remove the barrel layers
     for(auto hit : hits){
-      if( fabs( hit.Z() ) < 0.9999*endcapZ*1E3) continue;
+      //if( fabs( hit.Z() ) < 0.9999*endcapZ*1E3) continue;
       surfaceHits.push_back(hit);
     }
 
@@ -517,24 +523,10 @@ void TrackReconstructor::Process()
     }
   }
     
-
   hitMap->Draw("AP");
   can->SaveAs("hitMapTest.pdf");
   hitMap->Write();
   hitMap->SaveAs("hitMapTest.root");
-
-  // WJF: currently leftover -- TO DELETE 
-  // Create hits from tracks 
-  Candidate *track;
-  fItInputArray->Reset();
-  int itrack(0);
-  while((track = static_cast<Candidate*>(fItInputArray->Next())))
-  {
-    itrack++;
-    if(track->PT < fTrackPtMin) continue; // remove low pT tracks 
-    fOutputArray->Add(track);
-  }
-
 
 }
 

@@ -60,6 +60,8 @@
 #pragma link C++ class Track+;
 #pragma link C++ class Tower+;
 #pragma link C++ class HectorHit+;
+#pragma link C++ class Hit+;
+#pragma link C++ class Barrel+;
 
 #pragma link C++ class Candidate+;
 

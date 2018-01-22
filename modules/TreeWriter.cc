@@ -81,6 +81,7 @@ void TreeWriter::Init()
   fClassMap[Rho::Class()] = &TreeWriter::ProcessRho;
   fClassMap[Weight::Class()] = &TreeWriter::ProcessWeight;
   fClassMap[HectorHit::Class()] = &TreeWriter::ProcessHectorHit;
+  fClassMap[Hit::Class()] = &TreeWriter::ProcessHit;
 
   TBranchMap::iterator itBranchMap;
   map< TClass *, TProcessMethod >::iterator itClassMap;
@@ -775,6 +776,31 @@ void TreeWriter::ProcessWeight(ExRootTreeBranch *branch, TObjArray *array)
     entry->Weight = momentum.E();
   }
 }
+
+//------------------------------------------------------------------------------
+
+void TreeWriter::ProcessHit(ExRootTreeBranch *branch, TObjArray *array)
+{
+  TIter iterator(array);
+  Candidate *candidate = 0;
+  Hit *entry = 0;
+
+  iterator.Reset();
+  while((candidate = static_cast<Candidate*>(iterator.Next())))
+  {
+    const TLorentzVector &position = candidate->Position;
+
+    entry = static_cast<Hit*>(branch->NewEntry());
+
+    entry->T = position.T();
+    entry->X = position.X();
+    entry->Y = position.Y();
+    entry->Z = position.Z();
+
+    entry->Particle = candidate->GetCandidates()->At(0);
+  }
+}
+
 
 //------------------------------------------------------------------------------
 

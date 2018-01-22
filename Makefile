@@ -408,6 +408,7 @@ tmp/modules/ModulesDict.$(SrcSuf): \
 	modules/VertexSorter.h \
 	modules/VertexFinder.h \
 	modules/VertexTrackAssociator.h \
+	modules/TrackReconstructor.h \
 	modules/VertexFinderDA4D.h \
 	modules/PrimaryBinFinder.h \
 	modules/ExampleModule.h
@@ -459,6 +460,9 @@ DISPLAY_DICT_OBJ +=  \
 DISPLAY_DICT_PCM +=  \
 	DisplayDict$(PcmSuf)
 
+tmp/classes/Barrel.$(ObjSuf): \
+	classes/Barrel.$(SrcSuf) \
+	classes/Barrel.h
 tmp/classes/DelphesClasses.$(ObjSuf): \
 	classes/DelphesClasses.$(SrcSuf) \
 	classes/DelphesClasses.h \
@@ -957,6 +961,17 @@ tmp/modules/TrackPileUpSubtractor.$(ObjSuf): \
 	external/ExRootAnalysis/ExRootResult.h \
 	external/ExRootAnalysis/ExRootFilter.h \
 	external/ExRootAnalysis/ExRootClassifier.h
+tmp/modules/TrackReconstructor.$(ObjSuf): \
+	modules/TrackReconstructor.$(SrcSuf) \
+	modules/TrackReconstructor.h \
+	classes/DelphesClasses.h \
+	classes/DelphesFactory.h \
+	classes/DelphesFormula.h \
+	classes/DelphesPileUpReader.h \
+	classes/Barrel.h \
+	external/ExRootAnalysis/ExRootResult.h \
+	external/ExRootAnalysis/ExRootFilter.h \
+	external/ExRootAnalysis/ExRootClassifier.h
 tmp/modules/TrackSmearing.$(ObjSuf): \
 	modules/TrackSmearing.$(SrcSuf) \
 	modules/TrackSmearing.h \
@@ -1035,6 +1050,7 @@ tmp/modules/Weighter.$(ObjSuf): \
 	external/ExRootAnalysis/ExRootFilter.h \
 	external/ExRootAnalysis/ExRootClassifier.h
 DELPHES_OBJ +=  \
+	tmp/classes/Barrel.$(ObjSuf) \
 	tmp/classes/DelphesClasses.$(ObjSuf) \
 	tmp/classes/DelphesCylindricalFormula.$(ObjSuf) \
 	tmp/classes/DelphesFactory.$(ObjSuf) \
@@ -1123,6 +1139,7 @@ DELPHES_OBJ +=  \
 	tmp/modules/TrackCountingBTagging.$(ObjSuf) \
 	tmp/modules/TrackCountingTauTagging.$(ObjSuf) \
 	tmp/modules/TrackPileUpSubtractor.$(ObjSuf) \
+	tmp/modules/TrackReconstructor.$(ObjSuf) \
 	tmp/modules/TrackSmearing.$(ObjSuf) \
 	tmp/modules/TreeWriter.$(ObjSuf) \
 	tmp/modules/UniqueObjectFinder.$(ObjSuf) \
@@ -1788,6 +1805,11 @@ modules/LeptonDressing.h: \
 
 external/fastjet/internal/Voronoi.hh: \
 	external/fastjet/LimitedWarning.hh
+	@touch $@
+
+modules/TrackReconstructor.h: \
+	classes/DelphesModule.h \
+	classes/Barrel.h
 	@touch $@
 
 external/fastjet/ClusterSequenceActiveAreaExplicitGhosts.hh: \

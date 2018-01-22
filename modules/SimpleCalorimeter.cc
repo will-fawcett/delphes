@@ -159,7 +159,7 @@ void SimpleCalorimeter::Init()
 
   // generate list of numbers from -pi -> pi with spacing fTrackerPhi
   std::vector<double> phiPositions;
-  for(float iphi= -1*M_PI; iphi<M_PI; iphi+=fTrackerPhi){
+  for(double iphi= -1*M_PI; iphi<M_PI; iphi+=fTrackerPhi){
     phiPositions.push_back(iphi);
   }
 
