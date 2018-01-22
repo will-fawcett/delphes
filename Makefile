@@ -408,7 +408,7 @@ tmp/modules/ModulesDict.$(SrcSuf): \
 	modules/VertexSorter.h \
 	modules/VertexFinder.h \
 	modules/VertexTrackAssociator.h \
-	modules/TrackReconstructor.h \
+	modules/HitFinder.h \
 	modules/VertexFinderDA4D.h \
 	modules/PrimaryBinFinder.h \
 	modules/ExampleModule.h
@@ -727,6 +727,17 @@ tmp/modules/Hector.$(ObjSuf): \
 	external/Hector/H_BeamLine.h \
 	external/Hector/H_RecRPObject.h \
 	external/Hector/H_BeamParticle.h
+tmp/modules/HitFinder.$(ObjSuf): \
+	modules/HitFinder.$(SrcSuf) \
+	modules/HitFinder.h \
+	classes/DelphesClasses.h \
+	classes/DelphesFactory.h \
+	classes/DelphesFormula.h \
+	classes/DelphesPileUpReader.h \
+	classes/Barrel.h \
+	external/ExRootAnalysis/ExRootResult.h \
+	external/ExRootAnalysis/ExRootFilter.h \
+	external/ExRootAnalysis/ExRootClassifier.h
 tmp/modules/IdentificationMap.$(ObjSuf): \
 	modules/IdentificationMap.$(SrcSuf) \
 	modules/IdentificationMap.h \
@@ -961,17 +972,6 @@ tmp/modules/TrackPileUpSubtractor.$(ObjSuf): \
 	external/ExRootAnalysis/ExRootResult.h \
 	external/ExRootAnalysis/ExRootFilter.h \
 	external/ExRootAnalysis/ExRootClassifier.h
-tmp/modules/TrackReconstructor.$(ObjSuf): \
-	modules/TrackReconstructor.$(SrcSuf) \
-	modules/TrackReconstructor.h \
-	classes/DelphesClasses.h \
-	classes/DelphesFactory.h \
-	classes/DelphesFormula.h \
-	classes/DelphesPileUpReader.h \
-	classes/Barrel.h \
-	external/ExRootAnalysis/ExRootResult.h \
-	external/ExRootAnalysis/ExRootFilter.h \
-	external/ExRootAnalysis/ExRootClassifier.h
 tmp/modules/TrackSmearing.$(ObjSuf): \
 	modules/TrackSmearing.$(SrcSuf) \
 	modules/TrackSmearing.h \
@@ -1113,6 +1113,7 @@ DELPHES_OBJ +=  \
 	tmp/modules/EnergySmearing.$(ObjSuf) \
 	tmp/modules/ExampleModule.$(ObjSuf) \
 	tmp/modules/Hector.$(ObjSuf) \
+	tmp/modules/HitFinder.$(ObjSuf) \
 	tmp/modules/IdentificationMap.$(ObjSuf) \
 	tmp/modules/ImpactParameterSmearing.$(ObjSuf) \
 	tmp/modules/Isolation.$(ObjSuf) \
@@ -1139,7 +1140,6 @@ DELPHES_OBJ +=  \
 	tmp/modules/TrackCountingBTagging.$(ObjSuf) \
 	tmp/modules/TrackCountingTauTagging.$(ObjSuf) \
 	tmp/modules/TrackPileUpSubtractor.$(ObjSuf) \
-	tmp/modules/TrackReconstructor.$(ObjSuf) \
 	tmp/modules/TrackSmearing.$(ObjSuf) \
 	tmp/modules/TreeWriter.$(ObjSuf) \
 	tmp/modules/UniqueObjectFinder.$(ObjSuf) \
@@ -1807,11 +1807,6 @@ external/fastjet/internal/Voronoi.hh: \
 	external/fastjet/LimitedWarning.hh
 	@touch $@
 
-modules/TrackReconstructor.h: \
-	classes/DelphesModule.h \
-	classes/Barrel.h
-	@touch $@
-
 external/fastjet/ClusterSequenceActiveAreaExplicitGhosts.hh: \
 	external/fastjet/PseudoJet.hh \
 	external/fastjet/ClusterSequenceAreaBase.hh \
@@ -2094,6 +2089,11 @@ modules/ParticlePropagator.h: \
 
 modules/PdgCodeFilter.h: \
 	classes/DelphesModule.h
+	@touch $@
+
+modules/HitFinder.h: \
+	classes/DelphesModule.h \
+	classes/Barrel.h
 	@touch $@
 
 external/fastjet/plugins/CDFCones/fastjet/CDFMidPointPlugin.hh: \

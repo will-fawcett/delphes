@@ -1,4 +1,4 @@
-/** \class TrackReconstructor
+/** \class HitFinder
  *
  *  Take a track collection, as well as inputs defining surfaces for tracking layers (either barrles or discs)
  *  Perform simple hit creation, and then tracking
@@ -10,7 +10,7 @@
  */
 
 
-#include "modules/TrackReconstructor.h"
+#include "modules/HitFinder.h"
 #include "classes/DelphesClasses.h"
 #include "classes/DelphesFactory.h"
 #include "classes/DelphesFormula.h"
@@ -53,21 +53,21 @@ using namespace std;
 
 //------------------------------------------------------------------------------
 
-TrackReconstructor::TrackReconstructor() :
+HitFinder::HitFinder() :
   fBarrelLength(0), fEndCapRadius(0)
 {
 }
 
 //------------------------------------------------------------------------------
 
-TrackReconstructor::~TrackReconstructor()
+HitFinder::~HitFinder()
 {
 }
 
 
 //------------------------------------------------------------------------------
 
-void TrackReconstructor::Init()
+void HitFinder::Init()
 {
 
   ////////////////////////////////////////////////////
@@ -126,7 +126,7 @@ void TrackReconstructor::Init()
   // If an asymetrical tracker design was needed, then a hack would be required
   for(int i=0; i<endcapZPositions.GetSize(); ++i){
     if( endcapZPositions[i].GetDouble() < 0.0){
-      std::cout << "WARNIGN: TrackReconstructor: Negative endcap z positions detected, which will be ignored. The user need only input positive values, and a symmetrical detector design is assumed." << std::endl;
+      std::cout << "WARNIGN: HitFinder: Negative endcap z positions detected, which will be ignored. The user need only input positive values, and a symmetrical detector design is assumed." << std::endl;
       continue;
     }
     fEndcapZPositions.push_back( endcapZPositions[i].GetDouble() ); 
@@ -138,7 +138,7 @@ void TrackReconstructor::Init()
 
 //------------------------------------------------------------------------------
 
-void TrackReconstructor::Finish()
+void HitFinder::Finish()
 {
   if(fItInputArray) delete fItInputArray;
 }
@@ -148,7 +148,7 @@ void TrackReconstructor::Finish()
 // assume that, even though the calling of ParticlePropagator is done inside Process()
 // that it behaves (in terms of retrieving the particles to propagate) in the same way as though this was calling Process() multiple times? 
 // or is it that this function will loop over all candidates in the event? 
-std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, bool removeEndcaps, bool removeBarrel)
+std::vector<TLorentzVector> HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, bool removeEndcaps, bool removeBarrel)
 {
   std::cout << "ParticlePropagator() radius: " << RADIUS_MAX << " half length: " << HalfLengthMax << std::endl;
 
@@ -476,7 +476,7 @@ std::vector<TLorentzVector> TrackReconstructor::ParticlePropagator(float RADIUS_
   return hitPositions; 
 }
 
-void TrackReconstructor::Process()
+void HitFinder::Process()
 {
 
   TCanvas *can = new TCanvas("can", "can", 500, 500);

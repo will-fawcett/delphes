@@ -1,7 +1,7 @@
-#ifndef TrackReconstructor_h
-#define TrackReconstructor_h
+#ifndef HitFinder_h
+#define HitFinder_h
 
-/** \class TrackReconstructor
+/** \class HitFinder
  *
  *  Associate tracks to a vertex  
  *
@@ -23,12 +23,12 @@ class TIterator;
 class Barrel;
 
 
-class TrackReconstructor: public DelphesModule
+class HitFinder: public DelphesModule
 {
 public:
 
-  TrackReconstructor();
-  ~TrackReconstructor();
+  HitFinder();
+  ~HitFinder();
 
   void Init();
   void Process();
@@ -54,7 +54,7 @@ private:
 
   TObjArray *fHitOutputArray;
 
-  ClassDef(TrackReconstructor, 1)
+  ClassDef(HitFinder, 1)
 };
 
 #endif
