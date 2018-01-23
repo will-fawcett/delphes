@@ -1,5 +1,4 @@
-/*
- *  Delphes: a framework for fast simulation of a generic collider experiment
+/* framework for fast simulation of a generic collider experiment
  *  Copyright (C) 2012-2014  Universite catholique de Louvain (UCL), Belgium
  *
  *  This program is free software: you can redistribute it and/or modify
@@ -505,10 +504,15 @@ public:
   Float_t Z; 
   Float_t T;  
 
+  UInt_t SurfaceID; // an ID number corresponding to the surface on which the hit was generated 
+
   TRef Particle; // reference to generated particle
 
   static CompBase *fgCompare; //!
   const CompBase *GetCompare() const { return fgCompare; }
+
+  TLorentzVector Position() const;
+  float Perp() const;
 
   ClassDef(Hit, 1)
 };
@@ -601,6 +605,9 @@ public:
   Float_t Xd;
   Float_t Yd;
   Float_t Zd;
+
+  // Hit parameters
+  UInt_t SurfaceID;
 
   // tracking resolution
 

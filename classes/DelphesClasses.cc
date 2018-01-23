@@ -39,7 +39,7 @@ CompBase *Muon::fgCompare = CompPT<Muon>::Instance();
 CompBase *Jet::fgCompare = CompPT<Jet>::Instance();
 CompBase *Track::fgCompare = CompPT<Track>::Instance();
 CompBase *Tower::fgCompare = CompE<Tower>::Instance();
-CompBase *Hit::fgCompare = 0; //CompE<Hit>::Instance();
+CompBase *Hit::fgCompare = CompZ<Hit>::Instance();
 CompBase *HectorHit::fgCompare = CompE<HectorHit>::Instance();
 CompBase *Vertex::fgCompare = CompSumPT2<Vertex>::Instance();
 CompBase *Candidate::fgCompare = CompMomentumPt<Candidate>::Instance();
@@ -118,6 +118,22 @@ TLorentzVector Tower::P4() const
 
 //------------------------------------------------------------------------------
 
+TLorentzVector Hit::Position() const
+{
+  TLorentzVector vec;
+  vec.SetXYZT(X, Y, Z, T);
+  return vec;
+}
+
+//------------------------------------------------------------------------------
+
+float Hit::Perp() const
+{
+  TLorentzVector vec = this->Position();
+  return vec.Perp();
+}
+
+//------------------------------------------------------------------------------
 Candidate::Candidate() :
   PID(0), Status(0), M1(-1), M2(-1), D1(-1), D2(-1),
   Charge(0), Mass(0.0),
@@ -157,6 +173,7 @@ Candidate::Candidate() :
   NSubJetsTrimmed(0),
   NSubJetsPruned(0),
   NSubJetsSoftDropped(0),
+  SurfaceID(0),
   fFactory(0),
   fArray(0)
 {
@@ -319,6 +336,7 @@ void Candidate::Copy(TObject &obj) const
   object.ClusterNDF = ClusterNDF;
   object.ClusterSigma = ClusterSigma; 
   object.SumPT2 = SumPT2;
+  object.SurfaceID = SurfaceID;
   
   object.FracPt[0] = FracPt[0];
   object.FracPt[1] = FracPt[1];
@@ -427,6 +445,7 @@ void Candidate::Clear(Option_t* option)
   BetaStar = 0.0;
   MeanSqDeltaR = 0.0;
   PTD = 0.0;
+  SurfaceID = 0;
 
   NTimeHits = 0;
   ECalEnergyTimePairs.clear();

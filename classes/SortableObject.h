@@ -55,6 +55,36 @@ public:
   ClassDef(SortableObject, 1)
 };
 
+
+//---------------------------------------------------------------------------
+// WJF: sort by geometry 
+//---------------------------------------------------------------------------
+
+template <typename T>
+class CompZ: public CompBase
+{
+  CompZ() {}
+public:
+  static CompZ *Instance()
+  {
+    static CompZ single;
+    return &single;
+  }
+
+  Int_t Compare(const TObject *obj1, const TObject *obj2) const
+  {
+    const T *t1 = static_cast<const T*>(obj1);
+    const T *t2 = static_cast<const T*>(obj2);
+    if(t1->Z > t2->Z)
+      return -1;
+    else if(t1->Z < t2->Z)
+      return 1;
+    else
+      return 0;
+  }
+};
+
+
 //---------------------------------------------------------------------------
 // Standard Comparison Criteria: E, ET, PT, DeltaR
 //---------------------------------------------------------------------------
