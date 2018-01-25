@@ -797,6 +797,8 @@ void TreeWriter::ProcessHit(ExRootTreeBranch *branch, TObjArray *array)
     entry->Y = position.Y();
     entry->Z = position.Z();
 
+    entry->SurfaceID = candidate->SurfaceID;
+
     entry->Particle = candidate->GetCandidates()->At(0);
   }
 }

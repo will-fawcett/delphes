@@ -33,7 +33,7 @@ public:
   void Init();
   void Process();
   void Finish();
-  std::vector<TLorentzVector> ParticlePropagator(float, float, bool, bool);
+  std::vector<TLorentzVector> ParticlePropagator(float, float, int, bool, bool);
 
 private:
 
@@ -48,7 +48,7 @@ private:
   Double_t fTrackPtMin; // minimum track pT to be considered 
   Double_t fEndCapRadius; // raduis of endcap discs [m] 
 
-  std::vector<Barrel> fBarrelLayers;
+  std::vector<float> fBarrelLayerRadii;
   std::vector<float> fEndcapZPositions; 
 
 

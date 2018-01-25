@@ -31,6 +31,8 @@
 #include "classes/SortableObject.h"
 #include "classes/DelphesClasses.h"
 
+#include "classes/anaClasses.h"
+
 #ifdef __CINT__
 
 #pragma link off all globals;
@@ -64,6 +66,11 @@
 #pragma link C++ class Barrel+;
 
 #pragma link C++ class Candidate+;
+
+#pragma link C++ class myTrack+;
+#pragma link C++ class TrackFitter+;
+#pragma link C++ class HitCollection+;
+
 
 #endif
 

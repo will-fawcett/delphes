@@ -183,6 +183,21 @@ EXECUTABLE_OBJ +=  \
 	tmp/examples/Example1.$(ObjSuf) \
 	tmp/validation/DelphesValidation.$(ObjSuf)
 
+basicTrackReconstructon$(ExeSuf): \
+	tmp/analysis/basicTrackReconstructon.$(ObjSuf)
+
+tmp/analysis/basicTrackReconstructon.$(ObjSuf): \
+	analysis/basicTrackReconstructon.cpp \
+	classes/DelphesClasses.h \
+	external/ExRootAnalysis/ExRootTreeReader.h \
+	external/ExRootAnalysis/ExRootResult.h \
+	modules/Delphes.h \
+	classes/DelphesClasses.h \
+	classes/DelphesFactory.h \
+	modules/FastJetFinder.h \
+	external/fastjet/PseudoJet.hh \
+	external/fastjet/JetDefinition.hh \
+	external/fastjet/ClusterSequence.hh
 trackParameters$(ExeSuf): \
 	tmp/analysis/trackParameters.$(ObjSuf)
 
@@ -248,6 +263,7 @@ tmp/readers/DelphesSTDHEP.$(ObjSuf): \
 	external/ExRootAnalysis/ExRootTreeBranch.h \
 	external/ExRootAnalysis/ExRootProgressBar.h
 EXECUTABLE +=  \
+	basicTrackReconstructon$(ExeSuf) \
 	trackParameters$(ExeSuf) \
 	DelphesHepMC$(ExeSuf) \
 	DelphesLHEF$(ExeSuf) \
@@ -255,6 +271,7 @@ EXECUTABLE +=  \
 	DelphesSTDHEP$(ExeSuf)
 
 EXECUTABLE_OBJ +=  \
+	tmp/analysis/basicTrackReconstructon.$(ObjSuf) \
 	tmp/analysis/trackParameters.$(ObjSuf) \
 	tmp/readers/DelphesHepMC.$(ObjSuf) \
 	tmp/readers/DelphesLHEF.$(ObjSuf) \
@@ -342,7 +359,8 @@ tmp/classes/ClassesDict.$(SrcSuf): \
 	classes/DelphesModule.h \
 	classes/DelphesFactory.h \
 	classes/SortableObject.h \
-	classes/DelphesClasses.h
+	classes/DelphesClasses.h \
+	classes/anaClasses.h
 tmp/classes/ClassesDict$(PcmSuf): \
 	tmp/classes/ClassesDict.$(SrcSuf)
 ClassesDict$(PcmSuf): \
@@ -519,6 +537,9 @@ tmp/classes/DelphesStream.$(ObjSuf): \
 tmp/classes/DelphesTF2.$(ObjSuf): \
 	classes/DelphesTF2.$(SrcSuf) \
 	classes/DelphesTF2.h
+tmp/classes/anaClasses.$(ObjSuf): \
+	classes/anaClasses.$(SrcSuf) \
+	classes/anaClasses.h
 tmp/external/ExRootAnalysis/ExRootConfReader.$(ObjSuf): \
 	external/ExRootAnalysis/ExRootConfReader.$(SrcSuf) \
 	external/ExRootAnalysis/ExRootConfReader.h \
@@ -1063,6 +1084,7 @@ DELPHES_OBJ +=  \
 	tmp/classes/DelphesSTDHEPReader.$(ObjSuf) \
 	tmp/classes/DelphesStream.$(ObjSuf) \
 	tmp/classes/DelphesTF2.$(ObjSuf) \
+	tmp/classes/anaClasses.$(ObjSuf) \
 	tmp/external/ExRootAnalysis/ExRootConfReader.$(ObjSuf) \
 	tmp/external/ExRootAnalysis/ExRootFilter.$(ObjSuf) \
 	tmp/external/ExRootAnalysis/ExRootProgressBar.$(ObjSuf) \
@@ -2130,6 +2152,10 @@ external/fastjet/ClusterSequenceVoronoiArea.hh: \
 	external/fastjet/PseudoJet.hh \
 	external/fastjet/AreaDefinition.hh \
 	external/fastjet/ClusterSequenceAreaBase.hh
+	@touch $@
+
+classes/anaClasses.h: \
+	classes/DelphesClasses.h
 	@touch $@
 
 modules/BTagging.h: \

@@ -73,19 +73,16 @@ void HitFinder::Init()
   ////////////////////////////////////////////////////
   // Input parameters (copied from ParticlePropagator) 
   ////////////////////////////////////////////////////
-  fInputArray = ImportArray(GetString("InputArray", "Delphes/stableParticles"));
+  fInputArray   = ImportArray(GetString("InputArray", "Delphes/stableParticles"));
   fItInputArray = fInputArray->MakeIterator();
 
   // import beamspot
-  try
-  {
+  try{
     fBeamSpotInputArray = ImportArray(GetString("BeamSpotInputArray", "BeamSpotFilter/beamSpotParticle"));
   }
-  catch(runtime_error &e)
-  {
+  catch(runtime_error &e){
     fBeamSpotInputArray = 0;
   }
-
   
   fBz = GetDouble("Bz", 0.0);
 
@@ -100,20 +97,11 @@ void HitFinder::Init()
   ///////////////////////////////
   fBarrelLength = GetDouble("BarrelLength", 1.0); // barrel length [m]
   ExRootConfParam barrelLayersParam = GetParam("BarrelLayerRadii"); // barrel layer radii [m]
-  ExRootConfParam barrelLayerPixelLengthParam = GetParam("BarrelLayerPixelLength"); // pixel length [um]
-  ExRootConfParam barrelLayerPixelWidthParam = GetParam("BarrelLayerPixelWidth"); // pixel width [um]
-  
-  // Make sure barrel layers are the same length
-  if( barrelLayersParam.GetSize() != barrelLayerPixelLengthParam.GetSize() 
-      &&  barrelLayerPixelLengthParam.GetSize() != barrelLayerPixelWidthParam.GetSize() ){
-    throw runtime_error("Barrel layer parameters are not the same length! Exiting");
-  }
 
   Long_t size = barrelLayersParam.GetSize();
   for(int i = 0; i < size; ++i){
-    std::cout << "parameter " << i << ": " << barrelLayersParam[i].GetDouble() << std::endl;
-    Barrel tempBarrel( barrelLayersParam[i].GetDouble(), barrelLayerPixelLengthParam[i].GetDouble(), barrelLayerPixelWidthParam[i].GetDouble() );
-    fBarrelLayers.push_back(tempBarrel); 
+    //std::cout << "parameter " << i << ": " << barrelLayersParam[i].GetDouble() << std::endl;
+    fBarrelLayerRadii.push_back( barrelLayersParam[i].GetDouble() ); 
   }
 
   ///////////////////////////////
@@ -132,8 +120,6 @@ void HitFinder::Init()
     fEndcapZPositions.push_back( endcapZPositions[i].GetDouble() ); 
   }
 
-
-
 }
 
 //------------------------------------------------------------------------------
@@ -148,9 +134,9 @@ void HitFinder::Finish()
 // assume that, even though the calling of ParticlePropagator is done inside Process()
 // that it behaves (in terms of retrieving the particles to propagate) in the same way as though this was calling Process() multiple times? 
 // or is it that this function will loop over all candidates in the event? 
-std::vector<TLorentzVector> HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, bool removeEndcaps, bool removeBarrel)
+std::vector<TLorentzVector> HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int SurfaceID, bool removeEndcaps, bool removeBarrel)
 {
-  std::cout << "ParticlePropagator() radius: " << RADIUS_MAX << " half length: " << HalfLengthMax << std::endl;
+  //std::cout << "ParticlePropagator() radius: " << RADIUS_MAX << " half length: " << HalfLengthMax << std::endl;
 
   std::vector<TLorentzVector> hitPositions;
 
@@ -447,6 +433,9 @@ std::vector<TLorentzVector> HitFinder::ParticlePropagator(float RADIUS_MAX, floa
           if( fabs( candidate->Position.Z() ) < 0.9999*HalfLengthMax*1E3) continue;
         }
 
+        // add surface ID to hit
+        candidate->SurfaceID = SurfaceID; 
+
 
         //fOutputArray->Add(candidate);
         switch(TMath::Abs(candidate->PID))
@@ -479,54 +468,26 @@ std::vector<TLorentzVector> HitFinder::ParticlePropagator(float RADIUS_MAX, floa
 void HitFinder::Process()
 {
 
-  TCanvas *can = new TCanvas("can", "can", 500, 500);
-  //TH3D *hitMap = new TH3D("hitmap", "title:x:y:z", 100, -2000, 2000, 100, -2000, 2000, 100, -4000, 4000); // hits seem to be recorded in mm 
-  TGraph2D *hitMap = new TGraph2D();
+  int SurfaceID(0);
 
-  
   // Creat hits for all barrel layers
   int hitNumber(0);
-  for(auto barrel : fBarrelLayers){
-    std::vector<TLorentzVector> hits, surfaceHits;
-    float radius = barrel.GetRadius();
+  for(auto barrelRadius : fBarrelLayerRadii){
+    std::vector<TLorentzVector> hits;
     bool removeEndcaps(true);
     bool removeBarrel(false);
-    hits = ParticlePropagator(radius, fBarrelLength, removeEndcaps, removeBarrel); // all barrels have the same length 
-
-    for(auto hit : hits){
-      surfaceHits.push_back(hit);
-    }
-
-    for(auto hit : surfaceHits){
-      hitMap->SetPoint(hitNumber, hit.X(), hit.Y(), hit.Z());
-      hitNumber++;
-    }
+    hits = ParticlePropagator(barrelRadius, fBarrelLength, SurfaceID, removeEndcaps, removeBarrel); // all barrels have the same length 
+    SurfaceID++;
   }
 
   // Create hits for endcap layers
   for(auto endcapZ : fEndcapZPositions){
-    std::vector<TLorentzVector> hits, surfaceHits;
+    std::vector<TLorentzVector> hits;
     bool removeEndcaps(false);
     bool removeBarrel(true);
-    hits = ParticlePropagator(fEndCapRadius, endcapZ, removeEndcaps, removeBarrel); 
-
-    // remove the barrel layers
-    for(auto hit : hits){
-      //if( fabs( hit.Z() ) < 0.9999*endcapZ*1E3) continue;
-      surfaceHits.push_back(hit);
-    }
-
-    for(auto hit : surfaceHits){
-      //hitMap->Fill( hit.X(), hit.Y(), hit.Z() );
-      hitMap->SetPoint(hitNumber, hit.X(), hit.Y(), hit.Z());
-      hitNumber++;
-    }
+    hits = ParticlePropagator(fEndCapRadius, endcapZ, SurfaceID, removeEndcaps, removeBarrel); 
+    SurfaceID++;
   }
-    
-  hitMap->Draw("AP");
-  can->SaveAs("hitMapTest.pdf");
-  hitMap->Write();
-  hitMap->SaveAs("hitMapTest.root");
 
 }
 
