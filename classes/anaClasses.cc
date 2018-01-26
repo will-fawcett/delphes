@@ -1,4 +1,78 @@
 #include "classes/anaClasses.h" 
+#include <cmath>
+#include "TMath.h"
+
+void sort(std::vector< std::pair< float, float> >){
+  x = p.first
+  y = p.second
+  h = TMath::Hypot(x, y);
+  h < something return; 
+}
+
+inline float quotient(float r, float r2, float param1, float param2){
+  return pow(r2,4)*param1*param1 - r*r * r2*r2 *(r2*r2 - 4*param2*param2);
+}
+
+bool TrackFitter::calculateRPhiWindow(const float r2, const float a, const float b){
+  /***********
+   * Calculates the coordinates of the intersection of:
+   * - a circle defined as touching the origin and point (a,b)
+   * - with another circle of radius r2 which is centered at the origin
+   * Note that: r2^2 < a^2 + b^2
+   * ************************/
+
+  // check geometry of coordinates
+  if ((a*a + b*b) < r2*r2){
+    std::cerr << "ERROR: hit coordinates are inside the barrel layer" << std::endl;
+    return false;
+  }
+
+  // Calculate center of circle (0, 0) -- (a, b)
+  float alpha = a/2;
+  float beta  = b/2; 
+  // radius of the circle
+  float rad = sqrt(alpha*alpha + beta*beta); 
+
+  // coordinates of the intersection
+  float x1 = (r2*r2*alpha + sqrt( quotient(rad, r2, alpha, beta) )) / (2*rad*rad);
+  float x2 = (r2*r2*alpha - sqrt( quotient(rad, r2, alpha, beta) )) / (2*rad*rad);
+
+  float y1 = (r2*r2*beta + sqrt( quotient(rad, r2, beta, alpha) )) / (2*rad*rad);
+  float y2 = (r2*r2*beta - sqrt( quotient(rad, r2, beta, alpha) )) / (2*rad*rad);
+
+  // dont know which comination are on the circle with radius r2, check
+  std::cout << "rad: " << rad << std::endl;  
+  float h1 = TMath::Hypot(x1, y1);
+  float h2 = TMath::Hypot(x1, y2);
+  float h3 = TMath::Hypot(x2, y1);
+  float h4 = TMath::Hypot(x2, y2);
+  std::cout << "(x1, y1) : h1 = " << h1 << std::endl;
+  std::cout << "(x2, y1) : h2 = " << h2 << std::endl;
+
+  std::vector< std::pair<float, float> > combinations; // could use map, but with integer index so it's the same as a vector
+  combinations.push_back( std::make_pair( x1, y1 ) ); 
+  combinations.push_back( std::make_pair( x1, y2 ) ); 
+  combinations.push_back( std::make_pair( x2, y1 ) ); 
+  combinations.push_back( std::make_pair( x2, y2 ) ); 
+
+  // sort the combinations 
+  // TODO: Write correct sorting angle
+  sort(combinations); 
+
+  //
+  std::pair<float, float> c1, c2;
+  c1 = combinations.at(1);
+  c2 = combinations.at(2); 
+
+  // now find angles 
+  // TODO: check this gives the correct angle (!) 
+  float phi1 = atan( c1.second, c1.first ) ;
+  float phi2 = atan( c2.second, c2.first ) ;
+
+  // return these angles
+
+  return true;  
+}
 
 
 float TrackFitter::calculateZWindowForNextLevel(float y0, float x0, float y2, float x1){
@@ -120,11 +194,17 @@ bool TrackFitter::associateHitsLinearOutToIn(hitContainer hitMap, float minZ, fl
     // calculate r of next-lower level
     float rInner = hitMap[layerID-1].at(0)->Perp(); 
 
-    // calculate search window
+    // calculate search window in z
     float r = hit.Perp();
     float z = hit.Z();
     float zLeft  = calculateZWindowForNextLevel(r, z, rInner, minZ); 
     float zRight = calculateZWindowForNextLevel(r, z, rInner, maxZ); 
+
+    // calculate search window in phi
+    calculateRPhiWindow()
+bool TrackFitter::calculateRPhiWindow(float r2, float a, float b){
+
+
 
     for(HitCollection jhit : m_associatedHitCollection){
       // only assign if hit is in next-lower level
@@ -178,6 +258,8 @@ bool TrackFitter::associateHitsLinearInToOut(hitContainer hitMap, float minZ, fl
         float zLeft = calculateZWindowForNextLevel(r, z, rOuter, maxZ); 
 
         //TODO add r-phi matching (!)
+        std::pair<float, float> phiCoords = calculateRPhiWindow()
+
 
         // determine if matched
         if(zLeft < outerHit.Z() && outerHit.Z() < zRight){

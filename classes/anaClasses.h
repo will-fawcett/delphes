@@ -87,7 +87,9 @@ class TrackFitter{
     bool combineHitsToTracksInToOut(); 
     bool combineHitsToTracksOutToIn(); 
 
+    // functions to calculate search windows
     float calculateZWindowForNextLevel(float, float, float, float);
+    bool calculateRPhiWindow(const float, const float, const float);
 
   public:
     
