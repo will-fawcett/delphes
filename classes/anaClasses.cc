@@ -1,19 +1,60 @@
 #include "classes/anaClasses.h" 
 #include <cmath>
+#include <utility>
 #include "TMath.h"
 
-void sort(std::vector< std::pair< float, float> >){
-  x = p.first
-  y = p.second
-  h = TMath::Hypot(x, y);
-  h < something return; 
+bool sortByHypot( const std::pair< float, float>& a, const std::pair< float, float>& b){
+  return (TMath::Hypot(a.first, a.second) < TMath::Hypot(b.first, b.second));
 }
 
 inline float quotient(float r, float r2, float param1, float param2){
   return pow(r2,4)*param1*param1 - r*r * r2*r2 *(r2*r2 - 4*param2*param2);
 }
 
-bool TrackFitter::calculateRPhiWindow(const float r2, const float a, const float b){
+float TrackFitter::calculateRPhiWindowInToOut(const float a, const float b, const float r){
+  /***********
+   * Calculates the maximum deviation in phi that a particle could have traversed 
+   * when travelling from a hit point (a, b) in an inner barrel layer to an outer barrel 
+   * layer with radius r 
+   * ************************/
+
+  // Radius of trajectory
+  float R = r/2.0;
+
+  // centres of the circle (alpha1, beta2) and (alpha2, beta1)
+  float quotient = sqrt( (4*R*R - a*a - b*b) * (a*a + b*b) );
+  float q = quotient / (a*a + b*b); 
+
+  float alpha1 = 0.5 * ( a + b*q );
+  float alpha2 = 0.5 * ( a - b*q );
+
+  float beta1 = 0.5 * ( b + a*q );
+  float beta2 = 0.5 * ( b - a*q );
+
+  // angles
+  float phi1 = atan2(beta1, alpha2);
+  //if(beta1 <= 0.0) phi1 += 2*M_PI;
+
+  float phi2 = atan2(beta2, alpha1);
+  //if(beta2 <= 0.0) phi2 += 2*M_PI; 
+
+  //std::cout << "a, b, r : " << a << " " << b << " " << r  << std::endl;
+  //std::cout << "(a1, b2) (" << alpha1 << ", " << beta2 << ") : phi = " << phi2/M_PI << "pi" << std::endl;
+  //std::cout << "(a2, b1) (" << alpha2 << ", " << beta1 << ") : phi = " << phi1/M_PI << "pi" <<  std::endl;
+  //std::cout << "" << std::endl; 
+  
+  // return the max deviation
+  float deltaPhi = acos(cos(phi1 - phi2))/2.0; 
+  if( isnan(deltaPhi) ){
+    std::cerr << "ERROR: calculateRPhiWindowInToOut() deltaPhi is NAN!" << std::endl;
+    return 0;
+  }
+
+  return deltaPhi;
+
+}
+
+bool TrackFitter::calculateRPhiWindowOutToIn(const float r2, const float a, const float b){
   /***********
    * Calculates the coordinates of the intersection of:
    * - a circle defined as touching the origin and point (a,b)
@@ -57,7 +98,7 @@ bool TrackFitter::calculateRPhiWindow(const float r2, const float a, const float
 
   // sort the combinations 
   // TODO: Write correct sorting angle
-  sort(combinations); 
+  std::sort(combinations.begin(), combinations.end(), sortByHypot); 
 
   //
   std::pair<float, float> c1, c2;
@@ -66,8 +107,8 @@ bool TrackFitter::calculateRPhiWindow(const float r2, const float a, const float
 
   // now find angles 
   // TODO: check this gives the correct angle (!) 
-  float phi1 = atan( c1.second, c1.first ) ;
-  float phi2 = atan( c2.second, c2.first ) ;
+  float phi1 = atan2( c1.second, c1.first ) ;
+  float phi2 = atan2( c2.second, c2.first ) ;
 
   // return these angles
 
@@ -201,10 +242,7 @@ bool TrackFitter::associateHitsLinearOutToIn(hitContainer hitMap, float minZ, fl
     float zRight = calculateZWindowForNextLevel(r, z, rInner, maxZ); 
 
     // calculate search window in phi
-    calculateRPhiWindow()
-bool TrackFitter::calculateRPhiWindow(float r2, float a, float b){
-
-
+    //calculateRPhiWindowOutToIn()
 
     for(HitCollection jhit : m_associatedHitCollection){
       // only assign if hit is in next-lower level
@@ -216,9 +254,6 @@ bool TrackFitter::calculateRPhiWindow(float r2, float a, float b){
     }
   }
 
-  for(auto hit : m_associatedHitCollection){
-    hit.printHit();
-  }
 
   return true;
 } // end associateHitsLinearOutToIn
@@ -232,7 +267,19 @@ bool TrackFitter::associateHitsLinearInToOut(hitContainer hitMap, float minZ, fl
     layers.push_back(key.first);
   }
 
+  /////////////////////
   // Fill HitCollection
+  /////////////////////
+  
+  // first reserve some space (performance)
+  int numHits(0);
+  for(auto layer : layers){
+    numHits += hitMap[layer].size();
+  }
+  m_associatedHitCollection.reserve(numHits+1);
+
+
+  // Fill hits 
   for(auto layer : layers){
     for(Hit* hit : hitMap[layer]){
       m_associatedHitCollection.push_back(HitCollection(hit));
@@ -240,32 +287,50 @@ bool TrackFitter::associateHitsLinearInToOut(hitContainer hitMap, float minZ, fl
   }
 
   // associate hit algorithm 
+  // It's very important to loop over the references to the object
+  // if a copy is made, then the pointer storing below wouldn't work
   for(HitCollection& innerHit : m_associatedHitCollection){
 
-    if(innerHit.SurfaceID == layers.at(0)){
+    // first loop over inner hits 
+    if(innerHit.SurfaceID != layers.at(0)) continue; 
 
-      // parameters of for the search window
-      float r = innerHit.Perp();
-      float z = innerHit.Z();
+    // parameters of for the search window
+    float r = innerHit.Perp();
+    float z = innerHit.Z();
 
-      for(auto outerHit : m_associatedHitCollection){
+    // second loop over outer hits 
+    for(HitCollection& outerHit : m_associatedHitCollection){
+      if(outerHit.SurfaceID == layers.at(0)) continue; // skip first layer (only want seeds from first layer)
 
-        if(outerHit.SurfaceID == layers.at(0)) continue; // skip first layer (only want seeds from first layer)
+      // calculate search window
+      float rOuter = outerHit.Perp();
+      float zRight  = calculateZWindowForNextLevel(r, z, rOuter, minZ); 
+      float zLeft = calculateZWindowForNextLevel(r, z, rOuter, maxZ); 
 
-        // calculate search window
-        float rOuter = outerHit.Perp();
-        float zRight  = calculateZWindowForNextLevel(r, z, rOuter, minZ); 
-        float zLeft = calculateZWindowForNextLevel(r, z, rOuter, maxZ); 
+      // doesn't really need to be calculated for each hit ... 
+      float maxPhiDeviation = calculateRPhiWindowInToOut(innerHit.X(), innerHit.Y(), rOuter);
 
-        //TODO add r-phi matching (!)
-        std::pair<float, float> phiCoords = calculateRPhiWindow()
+      std::cout << "1->2 " << calculateRPhiWindowInToOut(532, 0, 582) << std::endl;
+      std::cout << "1->3 " << calculateRPhiWindowInToOut(532, 0, 632) << std::endl;
+      std::cout << "2->3 " << calculateRPhiWindowInToOut(582, 0, 632) << std::endl;
 
+      float phiDeviation = innerHit.DeltaPhi(outerHit);
 
-        // determine if matched
-        if(zLeft < outerHit.Z() && outerHit.Z() < zRight){
-          innerHit.addHit(&outerHit);
-        }
+      // determine if matched
+      if( (zLeft < outerHit.Z() && outerHit.Z() < zRight) && (phiDeviation < maxPhiDeviation) ){
+        std::cout << "add hit " << phiDeviation << std::endl;
+        innerHit.addHit(&outerHit); // we're storing pointers to object stored in anoter vector
+        // usually it's a bad idea to store pointers to objects defined on the stack
+        // but m_associatedHitCollection won't be modified until it's deleted 
       }
+    } // loop over outer hits
+  } // loop over inner hits
+
+
+  for(auto hitCollection : m_associatedHitCollection){
+    if(hitCollection.SurfaceID == 0){
+      hitCollection.printMatchedHits();
+      //hitCollection.printAssignedHitPointers();
     }
   }
 
@@ -279,7 +344,8 @@ bool TrackFitter::combineHitsToTracksInToOut(){
 
     // consider innermost hits 
     if(hitCollection.SurfaceID == 0){
-      hitCollection.printHit();
+      //hitCollection.printHit();
+      hitCollection.printMatchedHits();
 
       // now make some tracks ... TODO
 
@@ -332,27 +398,44 @@ std::vector <myTrack> TrackFitter::GetTracks(){
 }
 
 
-void HitCollection::printAssignedHits(){
-  /******
-  std::cout << "Hit has: " << std::endl;
-  for(const auto &surface : m_assignedHits){ // returns a pair
-      std::cout << "\t" << surface.second.size() << " hits in layer " << surface.first << std::endl;
-  }
-  ********/
+float HitCollection::DeltaPhi(HitCollection& h) const  {
+  
+  return acos( cos ( this->Phi() - h.Phi() ));
+      //return m_position.DeltaPhi(h.GetPosition()); // used TLorentzVector DeltaPhi function
 }
 
-std::string HitCollection::hitInfo(){
+void HitCollection::printMatchedHits(int level) const{
+  std::cout << this->hitInfo() << std::endl; 
+  int iHit(1);
+
+  // loop over pointers of subhits  
+  for(HitCollection* subHit : m_assignedHits){
+    for(int i=0; i<level+1; ++i) std::cout << "\t";
+    std::cout << "h" << iHit << " " << subHit->hitInfo() <<  "deltaPhi " << this->DeltaPhi(*subHit) << std::endl;
+    iHit++;
+
+    // recursively print out hits belonging to any subhits
+    if(subHit->countAssignedHits() > 0){
+      subHit->printMatchedHits(level+1);
+    }
+
+  }
+}
+
+void HitCollection::printMatchedHits() const{
+  this->printMatchedHits(0);
+}
+
+
+std::string HitCollection::hitInfo() const{
   std::ostringstream s;
-  s << "position: (" << m_hit->X << ", " << m_hit->Y << ", " << m_hit->Z << ")" 
+  s << "position: (" << m_hit->X << ", " << m_hit->Y << ", " << m_hit->Z << ")"  // cartesian
+    << " (" << m_hit->Perp() << "," << m_hit->Phi() << ")" // (r, phi, z) cylindrical polars (z already printed, so not shown here)
     << "\t surface: " << m_hit->SurfaceID
-    << "\t has " << countAssignedHits() << " hits. "; 
+    << "\t has " << this->countAssignedHits() << " hits. "; 
   return s.str();
 }
 
-void HitCollection::printHit(){
-  std::cout << hitInfo() << std::endl;
+void HitCollection::printHit() const{
+  std::cout << this->hitInfo() << std::endl;
 }
-
-
-
-

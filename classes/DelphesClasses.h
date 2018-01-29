@@ -513,6 +513,7 @@ public:
 
   TLorentzVector Position() const;
   float Perp() const;
+  float Phi() const;
 
   ClassDef(Hit, 1)
 };

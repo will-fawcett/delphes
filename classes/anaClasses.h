@@ -50,22 +50,33 @@ class HitCollection{
       SurfaceID = -1; 
     };
 
+    void printAssignedHitPointers(){
+      for(HitCollection * h : m_assignedHits){
+        std::cout << h << std::endl;
+      }
+    }
+
     // other hits matched to this hit 
     void addHit(HitCollection* collectionIn){ m_assignedHits.push_back( collectionIn ); }
 
-    int countAssignedHits(){ return m_assignedHits.size(); }
+    int countAssignedHits() const { return m_assignedHits.size(); }
 
     // print functions 
-    void printAssignedHits();
-    void printHit();
-    std::string hitInfo();
+    void printHit() const;
+    std::string hitInfo() const;
+    void printMatchedHits(int) const;
+    void printMatchedHits() const;
 
     // access some of the TLorentzVector functions
-    float X() {return m_hit->X;}
-    float Y() {return m_hit->Y;}
-    float Z() {return m_hit->Z;}
-    float T() {return m_hit->T;}
-    float Perp() {return m_position.Perp();}
+    float X() const {return m_hit->X;}
+    float Y() const {return m_hit->Y;}
+    float Z() const {return m_hit->Z;}
+    float T() const {return m_hit->T;}
+    float Perp() const {return m_position.Perp();}
+    float Phi() const {return m_position.Phi();} // returns angle from [-pi, pi]
+    float DeltaPhi(HitCollection&) const;
+    TLorentzVector GetPosition() const {return m_position;}
+
 };
 
 // class to 
@@ -89,7 +100,8 @@ class TrackFitter{
 
     // functions to calculate search windows
     float calculateZWindowForNextLevel(float, float, float, float);
-    bool calculateRPhiWindow(const float, const float, const float);
+    bool calculateRPhiWindowOutToIn(const float, const float, const float);
+    float calculateRPhiWindowInToOut(const float, const float, const float);
 
   public:
     

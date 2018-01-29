@@ -134,6 +134,14 @@ float Hit::Perp() const
 }
 
 //------------------------------------------------------------------------------
+
+float Hit::Phi() const
+{
+  TLorentzVector vec = this->Position();
+  return vec.Phi(); // return phi coordinate from [-pi, pi]
+}
+
+//------------------------------------------------------------------------------
 Candidate::Candidate() :
   PID(0), Status(0), M1(-1), M2(-1), D1(-1), D2(-1),
   Charge(0), Mass(0.0),
