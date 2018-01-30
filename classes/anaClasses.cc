@@ -2,6 +2,7 @@
 #include <cmath>
 #include <utility>
 #include "TMath.h"
+#include "TGraphErrors.h"
 
 bool sortByHypot( const std::pair< float, float>& a, const std::pair< float, float>& b){
   return (TMath::Hypot(a.first, a.second) < TMath::Hypot(b.first, b.second));
@@ -33,15 +34,15 @@ float TrackFitter::calculateRPhiWindowInToOut(const float a, const float b, cons
 
   // angles
   float phi1 = atan2(beta1, alpha2);
-  //if(beta1 <= 0.0) phi1 += 2*M_PI;
 
   float phi2 = atan2(beta2, alpha1);
-  //if(beta2 <= 0.0) phi2 += 2*M_PI; 
 
-  //std::cout << "a, b, r : " << a << " " << b << " " << r  << std::endl;
-  //std::cout << "(a1, b2) (" << alpha1 << ", " << beta2 << ") : phi = " << phi2/M_PI << "pi" << std::endl;
-  //std::cout << "(a2, b1) (" << alpha2 << ", " << beta1 << ") : phi = " << phi1/M_PI << "pi" <<  std::endl;
-  //std::cout << "" << std::endl; 
+  if(m_debug){
+    std::cout << "a, b, r : " << a << " " << b << " " << r  << std::endl;
+    std::cout << "(a1, b2) (" << alpha1 << ", " << beta2 << ") : phi = " << phi2/M_PI << "pi" << std::endl;
+    std::cout << "(a2, b1) (" << alpha2 << ", " << beta1 << ") : phi = " << phi1/M_PI << "pi" <<  std::endl;
+    std::cout << "" << std::endl; 
+  }
   
   // return the max deviation
   float deltaPhi = acos(cos(phi1 - phi2))/2.0; 
@@ -82,6 +83,8 @@ bool TrackFitter::calculateRPhiWindowOutToIn(const float r2, const float a, cons
   float y2 = (r2*r2*beta - sqrt( quotient(rad, r2, beta, alpha) )) / (2*rad*rad);
 
   // dont know which comination are on the circle with radius r2, check
+  /******************
+   * WJF: will probably have an analytic solition! 
   std::cout << "rad: " << rad << std::endl;  
   float h1 = TMath::Hypot(x1, y1);
   float h2 = TMath::Hypot(x1, y2);
@@ -109,6 +112,7 @@ bool TrackFitter::calculateRPhiWindowOutToIn(const float r2, const float a, cons
   // TODO: check this gives the correct angle (!) 
   float phi1 = atan2( c1.second, c1.first ) ;
   float phi2 = atan2( c2.second, c2.first ) ;
+  *****************************/
 
   // return these angles
 
@@ -309,16 +313,10 @@ bool TrackFitter::associateHitsLinearInToOut(hitContainer hitMap, float minZ, fl
 
       // doesn't really need to be calculated for each hit ... 
       float maxPhiDeviation = calculateRPhiWindowInToOut(innerHit.X(), innerHit.Y(), rOuter);
-
-      std::cout << "1->2 " << calculateRPhiWindowInToOut(532, 0, 582) << std::endl;
-      std::cout << "1->3 " << calculateRPhiWindowInToOut(532, 0, 632) << std::endl;
-      std::cout << "2->3 " << calculateRPhiWindowInToOut(582, 0, 632) << std::endl;
-
       float phiDeviation = innerHit.DeltaPhi(outerHit);
 
       // determine if matched
       if( (zLeft < outerHit.Z() && outerHit.Z() < zRight) && (phiDeviation < maxPhiDeviation) ){
-        std::cout << "add hit " << phiDeviation << std::endl;
         innerHit.addHit(&outerHit); // we're storing pointers to object stored in anoter vector
         // usually it's a bad idea to store pointers to objects defined on the stack
         // but m_associatedHitCollection won't be modified until it's deleted 
@@ -340,17 +338,81 @@ bool TrackFitter::associateHitsLinearInToOut(hitContainer hitMap, float minZ, fl
 // create tracks from hit collections 
 bool TrackFitter::combineHitsToTracksInToOut(){
 
-  for(auto hitCollection : m_associatedHitCollection){
+  // loop over inner hits 
+  for(auto innerHit : m_associatedHitCollection){
+    if(innerHit.SurfaceID != 0) continue;
+    innerHit.printMatchedHits();
 
-    // consider innermost hits 
-    if(hitCollection.SurfaceID == 0){
-      //hitCollection.printHit();
-      hitCollection.printMatchedHits();
+    // remove cases where there are fewer than two hits
+    if(innerHit.countAssignedHits() < 2) continue; 
 
-      // now make some tracks ... TODO
+    // generate sets of three hits
+    std::vector< std::vector<Hit*> > hitCombinations = innerHit.makeHitCollection();
+    if(m_debug) std::cout << "This hit has " << hitCombinations.size() << " combinations." <<  std::endl;
 
+    // for each combination, do a straight line fit 
+    for(auto& combination : hitCombinations){
+      if(m_debug) std::cout << "This combination has " << combination.size() << " hits." << std::endl;
+
+      myTrack aTrack = simpleLinearLeastSquaresFit(combination);
+
+      // if track has z0 outside of the defined window, reject the track
+      float maxZ = m_parameters.at(1);
+      if(fabs(aTrack.z0) > maxZ){
+        //std::cout << "Track found outside luminous region" << std::endl;
+        continue;
+      }
+      m_tracks.push_back(aTrack); // add to collection of tracks 
     }
   }
+}
+
+myTrack TrackFitter::simpleLinearLeastSquaresFit(std::vector< Hit* > hits) const {
+  std::vector< std::pair<float, float> > coordinates;
+  for(Hit* hit : hits){
+    coordinates.push_back( std::make_pair(hit->Z, hit->Perp()) ); // coordinates in (r, z)
+  }
+  lineParameters parameters = simpleLinearLeastSquaresFit(coordinates); 
+  return myTrack(parameters, hits); 
+}
+
+
+//TrackFitter::simpleLinearLeastSquaresFit(std::vector<float> xvals, std::vector<float> yvals) const{
+lineParameters TrackFitter::simpleLinearLeastSquaresFit(std::vector<std::pair<float, float> > coordinates) const{
+  // Function to do simple linear least squares fitting (for a straight line)
+  // with the parameters y = mx + c. 
+  // Extracts the best fit for m and c. 
+  // Takes a vector of the coordinates {xi, yi} 
+
+  float X(0), Y(0), XX(0), XY(0);
+  float n = coordinates.size();
+
+  if(m_debug) std::cout << "coordinates (x, y)" << std::endl;
+  for(auto coord : coordinates){
+    float xi = coord.first;
+    float yi = coord.second;
+    if(m_debug) std::cout << xi << ", " << yi << std::endl;
+    X += xi;
+    Y += yi;
+    XX += xi*xi;
+    XY += xi*yi;
+  }
+
+  // gradient
+  float m = (XY*n - X*Y) / (XX*n -X*X);
+
+  // intercept
+  float c = (Y - m*X) / n; 
+
+  if(m_debug){
+    std::cout << "X: " << X << " Y: " << Y << " XX: " << XX << " XY:" << XY << std::endl;
+    std::cout << "(m, c) : " << m << ", " << c << ")" << std::endl; 
+  }
+
+  lineParameters params;
+  params.gradient = m;
+  params.intercept = c; 
+  return params;  
 }
 
 // algorithm not yet written
@@ -390,29 +452,103 @@ bool TrackFitter::AssociateHits(hitContainer hc){
 }
 
 std::vector <myTrack> TrackFitter::GetTracks(){
-
-  // perform linear fit on the hit collections 
-
-  std::vector<myTrack> temp; 
-  return temp;
+  return m_tracks;
 }
 
 
-float HitCollection::DeltaPhi(HitCollection& h) const  {
+std::vector< std::vector<Hit*> > allHitCombinations(const std::vector< std::vector<Hit*> > collection, std::vector<Hit*> hitsInLayer){
+  /**************
+   * Multiply two sets in different bases, and increase the dimentinoality of the vector space 
+   * Say the input "collection" is set A and hitsInLayer is set B
+   * Then this function will return the product set AxB 
+   * 
+   * Parameters:
+   *  collection: A vector of collections of hits
+   *  hitsInLayer: A vector of the hits in the next layer to be matched 
+   *
+   * Returns: 
+   *  A vector of collections of hits
+   * ************/
+  bool debug=false;
+
+  if(debug){
+    std::cout << "Input vector has " << collection.size() << " pairs" << std::endl;
+    std::cout << "Will be matched with " << hitsInLayer.size() << " hits" << std::endl;
+    std::cout << "Will then have " << collection.size()*hitsInLayer.size() << "pairs" << std::endl;
+  }
+
+  std::vector< std::vector<Hit* > > newCollection;
+  for(Hit* newHit : hitsInLayer){
+    // for each hit, create a copy of the previous collection, and add the hit to every of the vector or hits
+    // The new collection is then the sum of all these collections
+    
+    //std::vector< std::vector<Hit*> > collectionCopy = collection; 
+    for(auto existingGroup : collection){
+      existingGroup.push_back(newHit);
+      newCollection.push_back(existingGroup);
+    }
+  }
+  if(debug){
+    std::cout << "Resulting collection has size " << newCollection.size() << std::endl;
+  }
+  return newCollection;
+}
+
+std::vector< std::vector< Hit* > > HitCollection::makeHitCollection(){
+  // From a filled HitCollection object, create a vector of hits that correspond to the hits in each layer
+  // There may be many combination, so then there is a vector of these vectors
+  // Function should only be called on relevant HitCollections
+  //
+  // To be honest, I'm not sure if this function should even be a member of HitCollection 
   
+  std::map<int, std::vector<Hit*> > layerToHits;
+
+  // loop over pointers to matched HitCollections
+  // assign to specific layer
+  for(const auto matchedHit : m_assignedHits){
+    if( matchedHit->SurfaceID != this->SurfaceID){
+      layerToHits[matchedHit->SurfaceID].push_back(matchedHit->getHit());
+    }
+  }
+
+  // list of unique layers 
+  std::vector<int> layers;
+  for(auto const& key : layerToHits){
+    layers.push_back(key.first);
+  }
+  std::sort(layers.begin(), layers.end()); // should count in ascending order 
+
+  // Seed the combinations with the first hit
+  std::vector< std::vector< Hit* > > allCombinations;
+  std::vector<Hit*> firstHit;
+  firstHit.push_back(this->getHit());
+  allCombinations.push_back(firstHit); 
+
+  // Now return all possible combinations 
+  for(int layer : layers){
+      allCombinations = allHitCombinations(allCombinations, layerToHits[layer]);
+  }
+
+  return allCombinations;
+
+}
+
+float HitCollection::DeltaPhi(HitCollection& h) const  {
   return acos( cos ( this->Phi() - h.Phi() ));
-      //return m_position.DeltaPhi(h.GetPosition()); // used TLorentzVector DeltaPhi function
 }
 
 void HitCollection::printMatchedHits(int level) const{
-  std::cout << this->hitInfo() << std::endl; 
+  if(m_debug) std::cout << this->hitInfo() << std::endl; 
   int iHit(1);
 
   // loop over pointers of subhits  
   for(HitCollection* subHit : m_assignedHits){
-    for(int i=0; i<level+1; ++i) std::cout << "\t";
-    std::cout << "h" << iHit << " " << subHit->hitInfo() <<  "deltaPhi " << this->DeltaPhi(*subHit) << std::endl;
-    iHit++;
+
+    if(m_debug){
+      for(int i=0; i<level+1; ++i) std::cout << "\t";
+      std::cout << "h" << iHit << " " << subHit->hitInfo() <<  "deltaPhi " << this->DeltaPhi(*subHit) << std::endl;
+      iHit++;
+    }
 
     // recursively print out hits belonging to any subhits
     if(subHit->countAssignedHits() > 0){
@@ -438,4 +574,18 @@ std::string HitCollection::hitInfo() const{
 
 void HitCollection::printHit() const{
   std::cout << this->hitInfo() << std::endl;
+}
+
+
+void myTrack::calculateTrackParameters( cartesianCoordinate coord ){
+  // function to calculate d0, z0 (and in principle theta, phi, qOverP)
+  
+  phi = atan2( (m_gradient + m_intercept), 1);
+
+  z0 = -1 * (m_intercept / m_gradient);
+
+  d0=0; // can't calculate this with straight line
+  theta=0; // not calculable with 2D line
+  qOverP=0; // straight line : infinite radius of curvature (therefore infinite momentum)  
+
 }
