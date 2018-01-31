@@ -1,9 +1,8 @@
 /** \class HitFinder
  *
- *  Take a track collection, as well as inputs defining surfaces for tracking layers (either barrles or discs)
- *  Perform simple hit creation, and then tracking
- *  Only designed for a small number of tracking layers
- *  Returns new tracks, including new fake tracks 
+ *  Uses the particle propagator to extract the location of a particle when intersecting with a specified surface (i.e. a hit)
+ *  Two types of surface can be defined, barrels (which all must have the same length), and endcaps (which all must have the same radius).
+ *  If a particle does not have sufficient pT to reach the surface, then the hit is not stored.
  *
  *  \authors W. Fawcett
  *
@@ -86,8 +85,6 @@ void HitFinder::Init()
   
   fBz = GetDouble("Bz", 0.0);
 
-  // Input parameters
-  fTrackPtMin = GetDouble("TrackPtMin", 1.0); // minimum track pT threshold [GeV]
 
   // Output arrays 
   fHitOutputArray = ExportArray(GetString("OutputArray", "hits"));
@@ -154,9 +151,6 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
   Double_t l, d0, dz, p, ctgTheta, phip, etap, alpha;
   Double_t bsx, bsy, bsz;
 
-  int numCandidates(0);
-  int numCandidatesWithPtMin(0);
-  int numCandidatesInCylinder(0);
 
   const Double_t c_light = 2.99792458E8;
 
@@ -172,7 +166,6 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
   fItInputArray->Reset();
   while((candidate = static_cast<Candidate*>(fItInputArray->Next())))
   {
-    numCandidates++; 
     candidatePosition = candidate->Position;
     candidateMomentum = candidate->Momentum;
     x = candidatePosition.X()*1.0E-3;
@@ -191,7 +184,6 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
     if(TMath::Hypot(x, y) > RADIUS_MAX || TMath::Abs(z) > HalfLengthMax){
       continue;
     }
-    numCandidatesInCylinder++;
 
     px = candidateMomentum.Px();
     py = candidateMomentum.Py();
@@ -203,12 +195,6 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
     if(pt2 < 1.0E-9){
       continue;
     }
-
-    // WJF: make sure particle has sufficient momentum
-    // Is this an OK cut to make, what about a K-long for example? This might decay somewhere withing the tracking volume, and the decayed particles would still leave hits, but could have pT < 1 GeV?
-    // Something this this would certainly contribute to fakes ... ? 
-    if(pt < fTrackPtMin) continue;  
-    numCandidatesWithPtMin++;
 
     // Were only interested in charged particles, since we're looking for hits 
     if(TMath::Abs(charge) < 1.0E-9) continue; 
@@ -461,11 +447,6 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
       }
     }
   }
-  //std::cout << "Out of " << numCandidates << " candidate particles (to propagate)" << std::endl;
-  //std::cout << "Numbner of candidates inside cylinder " << numCandidatesInCylinder << std::endl;
-  //std::cout << numCandidatesWithPtMin << " had pT greater than the minimum threshold: " << fTrackPtMin << " GeV" << std::endl;
-  //std::cout << "From these tracks, " << hitPositions.size()  << " hits were found" << std::endl;
-  //return hitPositions; 
 }
 
 void HitFinder::Process()

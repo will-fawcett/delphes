@@ -3,7 +3,9 @@
 
 /** \class HitFinder
  *
- *  Associate tracks to a vertex  
+ *  Uses the particle propagator to extract the location of a particle when intersecting with a specified surface (i.e. a hit)
+ *  Two types of surface can be defined, barrels (which all must have the same length), and endcaps (which all must have the same radius).
+ *  If a particle does not have sufficient pT to reach the surface, then the hit is not stored.
  *
  *  \authors W. Fawcett
  *
@@ -45,7 +47,6 @@ private:
 
   Double_t fBz; // magnetic field in z direction [T]
   Double_t fBarrelLength; // length of the tracker barrel [m] (only in the positive z direction, so it's the "half length") 
-  Double_t fTrackPtMin; // minimum track pT to be considered 
   Double_t fEndCapRadius; // raduis of endcap discs [m] 
 
   std::vector<float> fBarrelLayerRadii;
