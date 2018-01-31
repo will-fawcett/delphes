@@ -133,12 +133,12 @@ void HitFinder::Finish()
 
 // assume that, even though the calling of ParticlePropagator is done inside Process()
 // that it behaves (in terms of retrieving the particles to propagate) in the same way as though this was calling Process() multiple times? 
-// or is it that this function will loop over all candidates in the event? 
-std::vector<TLorentzVector> HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int SurfaceID, bool removeEndcaps, bool removeBarrel)
+// or is it that this function will loop over all candidates in the event?
+void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int SurfaceID, bool removeEndcaps, bool removeBarrel)
 {
   //std::cout << "ParticlePropagator() radius: " << RADIUS_MAX << " half length: " << HalfLengthMax << std::endl;
 
-  std::vector<TLorentzVector> hitPositions;
+  //std::vector<TLorentzVector> hitPositions;
 
   Candidate *candidate, *mother;
   TLorentzVector candidatePosition, candidateMomentum, beamSpotPosition;
@@ -278,15 +278,18 @@ std::vector<TLorentzVector> HitFinder::ParticlePropagator(float RADIUS_MAX, floa
         {
           case 11:
             //fElectronOutputArray->Add(candidate);
-            hitPositions.push_back( candidate->Position ); 
+            //hitPositions.push_back( candidate->Position ); 
+            fHitOutputArray->Add(candidate);
             break;
           case 13:
             //fMuonOutputArray->Add(candidate);
-            hitPositions.push_back( candidate->Position ); 
+            //hitPositions.push_back( candidate->Position ); 
+            fHitOutputArray->Add(candidate);
             break;
           default:
             //fChargedHadronOutputArray->Add(candidate);
-            hitPositions.push_back( candidate->Position ); 
+            //hitPositions.push_back( candidate->Position ); 
+            fHitOutputArray->Add(candidate);
         }
       }
       else
@@ -442,17 +445,17 @@ std::vector<TLorentzVector> HitFinder::ParticlePropagator(float RADIUS_MAX, floa
         {
           case 11:
             //fElectronOutputArray->Add(candidate);
-            hitPositions.push_back( candidate->Position ); 
+            //hitPositions.push_back( candidate->Position ); 
             fHitOutputArray->Add(candidate);
             break;
           case 13:
             //fMuonOutputArray->Add(candidate);
-            hitPositions.push_back( candidate->Position ); 
+            //hitPositions.push_back( candidate->Position ); 
             fHitOutputArray->Add(candidate);
             break;
           default:
             //fChargedHadronOutputArray->Add(candidate);
-            hitPositions.push_back( candidate->Position ); 
+            //hitPositions.push_back( candidate->Position ); 
             fHitOutputArray->Add(candidate);
         }
       }
@@ -462,7 +465,7 @@ std::vector<TLorentzVector> HitFinder::ParticlePropagator(float RADIUS_MAX, floa
   //std::cout << "Numbner of candidates inside cylinder " << numCandidatesInCylinder << std::endl;
   //std::cout << numCandidatesWithPtMin << " had pT greater than the minimum threshold: " << fTrackPtMin << " GeV" << std::endl;
   //std::cout << "From these tracks, " << hitPositions.size()  << " hits were found" << std::endl;
-  return hitPositions; 
+  //return hitPositions; 
 }
 
 void HitFinder::Process()
@@ -476,7 +479,7 @@ void HitFinder::Process()
     std::vector<TLorentzVector> hits;
     bool removeEndcaps(true);
     bool removeBarrel(false);
-    hits = ParticlePropagator(barrelRadius, fBarrelLength, SurfaceID, removeEndcaps, removeBarrel); // all barrels have the same length 
+    ParticlePropagator(barrelRadius, fBarrelLength, SurfaceID, removeEndcaps, removeBarrel); // all barrels have the same length 
     SurfaceID++;
   }
 
@@ -485,7 +488,7 @@ void HitFinder::Process()
     std::vector<TLorentzVector> hits;
     bool removeEndcaps(false);
     bool removeBarrel(true);
-    hits = ParticlePropagator(fEndCapRadius, endcapZ, SurfaceID, removeEndcaps, removeBarrel); 
+    ParticlePropagator(fEndCapRadius, endcapZ, SurfaceID, removeEndcaps, removeBarrel); 
     SurfaceID++;
   }
 

@@ -33,7 +33,7 @@ public:
   void Init();
   void Process();
   void Finish();
-  std::vector<TLorentzVector> ParticlePropagator(float, float, int, bool, bool);
+  void ParticlePropagator(float, float, int, bool, bool);
 
 private:
 
