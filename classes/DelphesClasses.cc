@@ -138,7 +138,7 @@ float Hit::Perp() const
 float Hit::Phi() const
 {
   TLorentzVector vec = this->Position();
-  return vec.Phi(); // return phi coordinate from [-pi, pi]
+  return vec.Phi(); // Return phi coordinate from [-pi, pi]
 }
 
 //------------------------------------------------------------------------------

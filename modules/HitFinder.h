@@ -52,7 +52,6 @@ private:
   std::vector<float> fBarrelLayerRadii;
   std::vector<float> fEndcapZPositions; 
 
-
   TObjArray *fHitOutputArray;
 
   ClassDef(HitFinder, 1)

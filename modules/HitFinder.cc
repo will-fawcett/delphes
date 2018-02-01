@@ -128,14 +128,8 @@ void HitFinder::Finish()
 
 //------------------------------------------------------------------------------
 
-// assume that, even though the calling of ParticlePropagator is done inside Process()
-// that it behaves (in terms of retrieving the particles to propagate) in the same way as though this was calling Process() multiple times? 
-// or is it that this function will loop over all candidates in the event?
 void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int SurfaceID, bool removeEndcaps, bool removeBarrel)
 {
-  //std::cout << "ParticlePropagator() radius: " << RADIUS_MAX << " half length: " << HalfLengthMax << std::endl;
-
-  //std::vector<TLorentzVector> hitPositions;
 
   Candidate *candidate, *mother;
   TLorentzVector candidatePosition, candidateMomentum, beamSpotPosition;
@@ -179,7 +173,6 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
     charge = candidate->Charge;
 
     // Check that particle position is inside the cylinder that defines the detector volume 
-    // (it could be a decayed particle that originates outside?) 
     // NB TMath::Hypot(x, y) calculates hypotenuse see https://en.wikipedia.org/wiki/Hypot 
     if(TMath::Hypot(x, y) > RADIUS_MAX || TMath::Abs(z) > HalfLengthMax){
       continue;
@@ -199,21 +192,7 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
     // Were only interested in charged particles, since we're looking for hits 
     if(TMath::Abs(charge) < 1.0E-9) continue; 
 
-    if(TMath::Hypot(x, y) > RADIUS_MAX || TMath::Abs(z) > HalfLengthMax)
-    {
-      mother = candidate;
-      candidate = static_cast<Candidate*>(candidate->Clone());
-
-      candidate->InitialPosition = candidatePosition;
-      candidate->Position = candidatePosition;
-      candidate->L = 0.0;
-
-      candidate->Momentum = candidateMomentum;
-      candidate->AddCandidate(mother);
-
-      //fOutputArray->Add(candidate); // WJF dont need to modify output here
-    }
-    else if(TMath::Abs(charge) < 1.0E-9 || TMath::Abs(fBz) < 1.0E-9)
+    if(TMath::Abs(charge) < 1.0E-9 || TMath::Abs(fBz) < 1.0E-9)
     {
       // solve pt2*t^2 + 2*(px*x + py*y)*t - (fRadius2 - x*x - y*y) = 0
       tmp = px*y - py*x;
@@ -255,26 +234,18 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
       candidate->Momentum = candidateMomentum;
       candidate->AddCandidate(mother);
 
-      //fOutputArray->Add(candidate); // dont need to modify output array here
       if(TMath::Abs(charge) > 1.0E-9)
       {
-        std::cout << "bit that should never be entered" << std::endl; 
-        std::cout << "Charge: " << TMath::Abs(charge) << " fbz: " <<  TMath::Abs(fBz) << std::endl;
+        // This section should never be entered, relic from original ParticlePropagator
         switch(TMath::Abs(candidate->PID))
         {
           case 11:
-            //fElectronOutputArray->Add(candidate);
-            //hitPositions.push_back( candidate->Position ); 
             fHitOutputArray->Add(candidate);
             break;
           case 13:
-            //fMuonOutputArray->Add(candidate);
-            //hitPositions.push_back( candidate->Position ); 
             fHitOutputArray->Add(candidate);
             break;
           default:
-            //fChargedHadronOutputArray->Add(candidate);
-            //hitPositions.push_back( candidate->Position ); 
             fHitOutputArray->Add(candidate);
         }
       }
@@ -426,22 +397,15 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
         candidate->SurfaceID = SurfaceID; 
 
 
-        //fOutputArray->Add(candidate);
         switch(TMath::Abs(candidate->PID))
         {
           case 11:
-            //fElectronOutputArray->Add(candidate);
-            //hitPositions.push_back( candidate->Position ); 
             fHitOutputArray->Add(candidate);
             break;
           case 13:
-            //fMuonOutputArray->Add(candidate);
-            //hitPositions.push_back( candidate->Position ); 
             fHitOutputArray->Add(candidate);
             break;
           default:
-            //fChargedHadronOutputArray->Add(candidate);
-            //hitPositions.push_back( candidate->Position ); 
             fHitOutputArray->Add(candidate);
         }
       }

@@ -502,6 +502,7 @@ public:
 class Hit : public SortableObject
 {
 public:
+
   // coordinates of hit 
   Float_t X;
   Float_t Y;
@@ -509,7 +510,6 @@ public:
   Float_t T;  
 
   UInt_t SurfaceID; // an ID number corresponding to the surface on which the hit was generated 
-
   TRef Particle; // reference to generated particle
 
   static CompBase *fgCompare; //!
