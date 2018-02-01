@@ -200,6 +200,11 @@ Candidate::Candidate() :
   Tau[2] = 0.0;
   Tau[3] = 0.0;
   Tau[4] = 0.0;
+
+  SoftDroppedJet.SetXYZT(0.0, 0.0, 0.0, 0.0);
+  SoftDroppedSubJet1.SetXYZT(0.0, 0.0, 0.0, 0.0);
+  SoftDroppedSubJet2.SetXYZT(0.0, 0.0, 0.0, 0.0);
+
   for(i = 0; i < 5; ++i)
   {
     TrimmedP4[i].SetXYZT(0.0, 0.0, 0.0, 0.0);
@@ -377,6 +382,10 @@ void Candidate::Copy(TObject &obj) const
   object.NSubJetsPruned = NSubJetsPruned;
   object.NSubJetsSoftDropped = NSubJetsSoftDropped;
 
+  object.SoftDroppedJet =SoftDroppedJet;
+  object.SoftDroppedSubJet1 = SoftDroppedSubJet1;
+  object.SoftDroppedSubJet2 = SoftDroppedSubJet2;
+
   object.fFactory = fFactory;
   object.fArray = 0;
 
@@ -483,6 +492,11 @@ void Candidate::Clear(Option_t* option)
   Tau[2] = 0.0;
   Tau[3] = 0.0;
   Tau[4] = 0.0;
+
+  SoftDroppedJet.SetXYZT(0.0, 0.0, 0.0, 0.0);
+  SoftDroppedSubJet1.SetXYZT(0.0, 0.0, 0.0, 0.0);
+  SoftDroppedSubJet2.SetXYZT(0.0, 0.0, 0.0, 0.0);
+
 
   for(i = 0; i < 5; ++i)
   {
