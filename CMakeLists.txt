@@ -29,6 +29,16 @@ ENDIF(SET_RPATH)
 find_package(ROOT COMPONENTS EG Eve Geom Gui GuiHtml GenVector Hist Physics Matrix Graf RIO Tree Gpad RGL MathCore)
 include(${ROOT_USE_FILE})
 
+# WJF: Declare TrickTrack dependency
+find_package(tricktrack)
+include_directories(${tricktrack_INCLUDE_DIR})
+
+# WJF: Declare Eigen dependency ? 
+#find_package(Eigen3)
+#include_directories(${Eigen3_INCLUDE_DIR})
+include_directories($ENV{EIGEN_INCLUDE_DIR})
+
+
 if(NOT DEFINED CMAKE_INSTALL_LIBDIR)
   set(CMAKE_INSTALL_LIBDIR "lib")
 endif()
@@ -52,6 +62,7 @@ add_subdirectory(external)
 add_subdirectory(modules)
 add_subdirectory(readers)
 add_subdirectory(cards)
+add_subdirectory(analysis) # WJF: add (need to add CMakeLists)
 
 add_library(Delphes SHARED
   $<TARGET_OBJECTS:classes> 

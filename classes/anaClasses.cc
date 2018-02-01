@@ -1,8 +1,12 @@
 #include "classes/anaClasses.h" 
+#include "classes/HitCollection.h"
 #include <cmath>
 #include <utility>
 #include "TMath.h"
 #include "TGraphErrors.h"
+
+#include <ctime>
+
 
 bool sortByHypot( const std::pair< float, float>& a, const std::pair< float, float>& b){
   return (TMath::Hypot(a.first, a.second) < TMath::Hypot(b.first, b.second));
@@ -119,6 +123,19 @@ bool TrackFitter::calculateRPhiWindowOutToIn(const float r2, const float a, cons
   return true;  
 }
 
+inline lineParameters calculateLineParameters(float x0, float y0, float x1, float y1){
+  // Calculate the parameters of the straight line passing through the coordinates (x0, y0), (x1, y1)
+
+  float m = (y0 - y1) / (x0 - x1); 
+  float c = (x1*y0 - x0*y1) / (x1 - x0);
+
+  lineParameters params;
+  params.gradient = m;
+  params.intercept = c; 
+  return params;  
+
+}
+
 
 float TrackFitter::calculateZWindowForNextLevel(float y0, float x0, float y2, float x1){
   /***********************************************
@@ -128,11 +145,9 @@ float TrackFitter::calculateZWindowForNextLevel(float y0, float x0, float y2, fl
   float y1 = 0.0;
   
   // line parameters
-  float m = (y0 - y1) / (x0 - x1); 
-  float c = (x1*y0 - x0*y1) / (x1 - x0);
+  lineParameters params = calculateLineParameters(x0, y0, x1, y1);
 
-  // x = (y-c)/m
-  return (y2 - c)/m; 
+  return (y2 - params.intercept)/params.gradient; 
 }
 
 bool TrackFitter::associateHitsLinearOutToIn(hitContainer hitMap, float minZ, float maxZ){
@@ -147,12 +162,8 @@ bool TrackFitter::associateHitsLinearOutToIn(hitContainer hitMap, float minZ, fl
    *   -- repeat untill the last layer
    * *********************************************/
 
-  // Get layer IDs from hitContainer
-  std::vector<int> layers;
-  for(auto const& key : hitMap){
-    layers.push_back(key.first);
-  }
-  std::reverse(layers.begin(), layers.end()); // should count from 3 .. 2 .. 1 
+  // Reverse layer IDs 
+  std::reverse(m_layerIDs.begin(), m_layerIDs.end()); // should count from 3 .. 2 .. 1 
 
   /*****************8
   // loop over all hits in outer layer
@@ -224,7 +235,7 @@ bool TrackFitter::associateHitsLinearOutToIn(hitContainer hitMap, float minZ, fl
 
   // extract all hits again
   //std::vector<HitCollection> allHits;
-  for(auto layer : layers){
+  for(auto layer : m_layerIDs){
     for(Hit* hit : hitMap[layer]){
       //m_associatedHitCollection.push_back(HitCollection(hit));
       m_associatedHitCollection.push_back(HitCollection(hit));
@@ -234,7 +245,7 @@ bool TrackFitter::associateHitsLinearOutToIn(hitContainer hitMap, float minZ, fl
   // surfaces labelled 2 .. 1 ... 0. 0 being innermost 
   for(auto & hit : m_associatedHitCollection){
     int layerID = hit.SurfaceID;
-    if(layerID == layers.back()) continue; // no more layers inside 
+    if(layerID == m_layerIDs.back()) continue; // no more layers inside 
 
     // calculate r of next-lower level
     float rInner = hitMap[layerID-1].at(0)->Perp(); 
@@ -264,12 +275,15 @@ bool TrackFitter::associateHitsLinearOutToIn(hitContainer hitMap, float minZ, fl
 
 
 bool TrackFitter::associateHitsLinearInToOut(hitContainer hitMap, float minZ, float maxZ){
+  /****************************************************
+   * Fills the m_associatedHitCollection member variable, which is of type std::vector<HitCollection>
+   * Each element of this vector is a HitCollection object
+   *
+   * For each hit in the innermost layer, r--z and r--phi matching is performed. 
+   * All hits that lie within this volume are associated to the innermost hit (via the HitCollection object)
+   * (the vector will then have length equal to that of the number of hits in the innermost layer)
+   * ***********************************************/
 
-  // get all barrel layers
-  std::vector<int> layers;
-  for(auto const& key : hitMap){
-    layers.push_back(key.first);
-  }
 
   /////////////////////
   // Fill HitCollection
@@ -277,18 +291,25 @@ bool TrackFitter::associateHitsLinearInToOut(hitContainer hitMap, float minZ, fl
   
   // first reserve some space (performance)
   int numHits(0);
-  for(auto layer : layers){
+  for(auto layer : m_layerIDs){
     numHits += hitMap[layer].size();
   }
   m_associatedHitCollection.reserve(numHits+1);
 
 
   // Fill hits 
-  for(auto layer : layers){
+  for(auto layer : m_layerIDs){
     for(Hit* hit : hitMap[layer]){
       m_associatedHitCollection.push_back(HitCollection(hit));
     }
   }
+
+  // deltaPhi parameter for the search window. Only depends on the separation of the inner and outermost layers
+  // radius of outermost barrel layer
+  float outermostRadius = hitMap[ m_layerIDs.back() ].at(0)->Perp();
+  Hit* anInnerHit = hitMap[ 0 ].at(0);
+  float maxPhiDeviation = calculateRPhiWindowInToOut(anInnerHit->X, anInnerHit->Y, outermostRadius); // may only be necessary once 
+  float innermostRadius = anInnerHit->Perp();
 
   // associate hit algorithm 
   // It's very important to loop over the references to the object
@@ -296,52 +317,168 @@ bool TrackFitter::associateHitsLinearInToOut(hitContainer hitMap, float minZ, fl
   for(HitCollection& innerHit : m_associatedHitCollection){
 
     // first loop over inner hits 
-    if(innerHit.SurfaceID != layers.at(0)) continue; 
+    if(innerHit.SurfaceID != m_layerIDs.at(0)) continue; 
 
     // parameters of for the search window
-    float r = innerHit.Perp();
     float z = innerHit.Z();
+    float zRight  = calculateZWindowForNextLevel(innermostRadius, z, outermostRadius, minZ); 
+    float zLeft = calculateZWindowForNextLevel(innermostRadius, z, outermostRadius, maxZ); 
 
     // second loop over outer hits 
     for(HitCollection& outerHit : m_associatedHitCollection){
-      if(outerHit.SurfaceID == layers.at(0)) continue; // skip first layer (only want seeds from first layer)
-
-      // calculate search window
-      float rOuter = outerHit.Perp();
-      float zRight  = calculateZWindowForNextLevel(r, z, rOuter, minZ); 
-      float zLeft = calculateZWindowForNextLevel(r, z, rOuter, maxZ); 
-
-      // doesn't really need to be calculated for each hit ... 
-      float maxPhiDeviation = calculateRPhiWindowInToOut(innerHit.X(), innerHit.Y(), rOuter);
-      float phiDeviation = innerHit.DeltaPhi(outerHit);
+      if(outerHit.SurfaceID == m_layerIDs.at(0)) continue; // skip first layer (only want seeds from first layer)
 
       // determine if matched
-      if( (zLeft < outerHit.Z() && outerHit.Z() < zRight) && (phiDeviation < maxPhiDeviation) ){
-        innerHit.addHit(&outerHit); // we're storing pointers to object stored in anoter vector
-        // usually it's a bad idea to store pointers to objects defined on the stack
-        // but m_associatedHitCollection won't be modified until it's deleted 
+      if( (zLeft < outerHit.Z() && outerHit.Z() < zRight) ){ // split into two loops to save on DeltaPhi calculation
+
+        // calculate search window
+        float phiDeviation = innerHit.DeltaPhi(outerHit);
+
+        if( phiDeviation < maxPhiDeviation ){
+          innerHit.addHit(&outerHit); // we're storing pointers to object stored in anoter vector
+          // usually it's a bad idea to store pointers to objects defined on the stack
+          // but m_associatedHitCollection won't be modified until it's deleted 
+        }
       }
     } // loop over outer hits
   } // loop over inner hits
 
 
-  for(auto hitCollection : m_associatedHitCollection){
-    if(hitCollection.SurfaceID == 0){
-      hitCollection.printMatchedHits();
-      //hitCollection.printAssignedHitPointers();
-    }
-  }
 
   return true;
 }
 
-// create tracks from hit collections 
+
+bool TrackFitter::combineHitsToTracksMatchingInnerAndOutermost(){
+  /**********************************
+   * This function creates tracks from hit collections. 
+   *
+   * The algorithm proceeds as follows:
+   * For each HitCollection object (stored inside m_associatedHitCollection), all possible combinations of the innermost and outermost hit are made.
+   * A straight line is then drawn between the two points. 
+   * If in _all_ intermediate layers, there is also a hit that lies on the line (within some tolerance), then the straight line is returned as a track
+   *
+   * ********************************/
+
+
+  float tolerance = 0.4; // mm  2*sqrt(0.04) = 0.4 , 0.04 mm is size of pixel 
+
+  // Create pairs of innermost and outermost hits
+  int innerLayerID = m_layerIDs.at(0);
+  int outerLayerID = m_layerIDs.back();
+
+
+  if(innerLayerID == outerLayerID){
+    std::cerr << "ERROR: Only on layer! Impossible to form tracks" << std::endl;
+    return false; 
+  }
+
+  // Number of intermediate layers
+  int numIntermediateLayers = m_layerIDs.size() - 2;
+  
+  if(m_debug){
+    std::cout << "inner layer is : " << innerLayerID << std::endl;
+    std::cout << "outer layer is : " << outerLayerID << std::endl; 
+    std::cout << "There are " << numIntermediateLayers << " intermediate layers" << std::endl;
+    std::cout << "There are " << m_associatedHitCollection.size() << " hits in the innermost layer." << std::endl;
+    std::cout << "" << std::endl;
+  }
+
+  // Loop over all matched hit collections
+  for(const HitCollection& hitCollection : m_associatedHitCollection){
+    if(hitCollection.SurfaceID != innerLayerID) continue; // just to make sure were really talking about hit collections in the inner layer 
+    if(m_debug) hitCollection.printMatchedHits();
+
+    std::map<int, std::vector<Hit*>> layerToHitMap = hitCollection.getLayerToHitMap();
+    for(Hit* innerHit : layerToHitMap[innerLayerID]){
+      for(Hit* outerHit : layerToHitMap[outerLayerID]){
+
+        lineParameters trackLine = calculateLineParameters( innerHit->Z, innerHit->Perp(), outerHit->Z, outerHit->Perp() );
+
+        if(m_debug){
+          std::cout << "Inner hit: " << innerHit->X << ", " << innerHit->Y << ", " << innerHit->Z << std::endl;
+          std::cout << "outer hit: " << outerHit->X << ", " << outerHit->Y << ", " << outerHit->Z << std::endl;
+          std::cout << "Line parameters, grad: " << trackLine.gradient << " \tintercept: " << trackLine.intercept << std::endl;
+        }
+
+
+        /****************************************
+         * in order to find the tolerance within which hits in the inner layers can be associated
+         * vary the coordinates of the hit by 2*sqrt(pixel size) in the inner and outer layers
+         * two new lines are constructed, which creates a window in which the hit inside the inner layers could be
+         * if each of the inner layers has a hit, then it's a track!
+         * 
+         *            outer hit +/- 2*sqrt(pixel size)
+         * ----------- |---o---|----------------
+         *           /   /   /
+         * ---------|-------|-------------------  search window (should also be 2*sqrt(pixel size)) 
+         *         /   /   /
+         * -------|---o---|---------------------
+         *        inner hit +/- 2*sqrt(pixel size)
+         *
+         * Since this tolerance is just 2*sqrt(pixel size) then we don't need to calculate these extra lines
+         * but would do if the geometry was different 
+         *
+         ****************************************/
+
+        // Detect if there is a hit in all of the intermediate layers (within tolerance), return track if true 
+        int nMatchedHits(0);
+        std::vector<Hit*> trackHits;
+        trackHits.push_back(innerHit);
+
+        // loop over intermediate hits (could be made more efficient by calculating radius and zintercept only once?)
+        for(auto layer : m_layerIDs){
+          if(layer == innerLayerID || layer == outerLayerID) continue; // only intermediate layers
+
+          if(m_debug) std::cout << "There are " << layerToHitMap[layer].size() << " loosely matched hits in the intermediate layer" << std::endl;
+          if(layerToHitMap[layer].size() == 0) continue; // must have at least one loosely matched hit in the intermediate layers
+
+          // radius of this intermediate layer
+          float radius = layerToHitMap[layer].at(0)->Perp(); 
+
+          // z coordinate of intersection of line and this barrel layer
+          float zCoordinate = (radius - trackLine.intercept) / trackLine.gradient; 
+
+          for(Hit* intermediateHit : layerToHitMap[layer]){
+
+            if(fabs(intermediateHit->Z - zCoordinate) < tolerance){
+              if(m_debug) std::cout << "\tThere is a matched hit!" << std::endl;
+              trackHits.push_back( intermediateHit );
+              nMatchedHits++;
+            }
+          }
+        } // end loop over intermediate layers 
+        trackHits.push_back( outerHit );
+
+        // if there is a correct number of matches, add the track!
+        if(nMatchedHits == numIntermediateLayers){
+
+          // Now create a straight line with all points (re-fit the track with the extra hits) 
+          myTrack aTrack = simpleLinearLeastSquaresFit(trackHits);
+          m_tracks.push_back( aTrack ); 
+        }
+
+      } // end loop over hits in outer layer
+    } // end loop over hits in inner layer 
+    if(m_debug) std::cout << "" << std::endl;
+  } // end loop over hit collections
+
+  return true;
+}
+
 bool TrackFitter::combineHitsToTracksInToOut(){
+  /**********************************
+  * Create tracks from hit collections.
+  * This algorithm works as follows. 
+  * For each HitCollection object (stored inside m_associatedHitCollection)
+  * all possible combinations of hits are made in each layer. Each set then contains one hit in each layer. 
+  * A straight-line track is then created for each set of hits using least squares to extract the line parameters.
+  * If the line does not intersect the beamline within 3-sigma of the luminous region, then the track is rejected.
+  ************************************/
 
   // loop over inner hits 
-  for(auto innerHit : m_associatedHitCollection){
+  for(const auto& innerHit : m_associatedHitCollection){
     if(innerHit.SurfaceID != 0) continue;
-    innerHit.printMatchedHits();
 
     // remove cases where there are fewer than two hits
     if(innerHit.countAssignedHits() < 2) continue; 
@@ -443,6 +580,14 @@ bool TrackFitter::AssociateHits(hitContainer hc){
         return false;
       }
     }
+    case linearInnerAndOuterMatching:{
+       float minZ = m_parameters.at(0);
+       float maxZ = m_parameters.at(1);
+       if(this->associateHitsLinearInToOut(hc, minZ, maxZ)){
+         return this->combineHitsToTracksMatchingInnerAndOutermost();
+       }
+       else return false;
+    }
     case MAX:{
       return false;
     }
@@ -456,132 +601,15 @@ std::vector <myTrack> TrackFitter::GetTracks(){
 }
 
 
-std::vector< std::vector<Hit*> > allHitCombinations(const std::vector< std::vector<Hit*> > collection, std::vector<Hit*> hitsInLayer){
-  /**************
-   * Multiply two sets in different bases, and increase the dimentinoality of the vector space 
-   * Say the input "collection" is set A and hitsInLayer is set B
-   * Then this function will return the product set AxB 
-   * 
-   * Parameters:
-   *  collection: A vector of collections of hits
-   *  hitsInLayer: A vector of the hits in the next layer to be matched 
-   *
-   * Returns: 
-   *  A vector of collections of hits
-   * ************/
-  bool debug=false;
-
-  if(debug){
-    std::cout << "Input vector has " << collection.size() << " pairs" << std::endl;
-    std::cout << "Will be matched with " << hitsInLayer.size() << " hits" << std::endl;
-    std::cout << "Will then have " << collection.size()*hitsInLayer.size() << "pairs" << std::endl;
-  }
-
-  std::vector< std::vector<Hit* > > newCollection;
-  for(Hit* newHit : hitsInLayer){
-    // for each hit, create a copy of the previous collection, and add the hit to every of the vector or hits
-    // The new collection is then the sum of all these collections
-    
-    //std::vector< std::vector<Hit*> > collectionCopy = collection; 
-    for(auto existingGroup : collection){
-      existingGroup.push_back(newHit);
-      newCollection.push_back(existingGroup);
-    }
-  }
-  if(debug){
-    std::cout << "Resulting collection has size " << newCollection.size() << std::endl;
-  }
-  return newCollection;
-}
-
-std::vector< std::vector< Hit* > > HitCollection::makeHitCollection(){
-  // From a filled HitCollection object, create a vector of hits that correspond to the hits in each layer
-  // There may be many combination, so then there is a vector of these vectors
-  // Function should only be called on relevant HitCollections
-  //
-  // To be honest, I'm not sure if this function should even be a member of HitCollection 
-  
-  std::map<int, std::vector<Hit*> > layerToHits;
-
-  // loop over pointers to matched HitCollections
-  // assign to specific layer
-  for(const auto matchedHit : m_assignedHits){
-    if( matchedHit->SurfaceID != this->SurfaceID){
-      layerToHits[matchedHit->SurfaceID].push_back(matchedHit->getHit());
-    }
-  }
-
-  // list of unique layers 
-  std::vector<int> layers;
-  for(auto const& key : layerToHits){
-    layers.push_back(key.first);
-  }
-  std::sort(layers.begin(), layers.end()); // should count in ascending order 
-
-  // Seed the combinations with the first hit
-  std::vector< std::vector< Hit* > > allCombinations;
-  std::vector<Hit*> firstHit;
-  firstHit.push_back(this->getHit());
-  allCombinations.push_back(firstHit); 
-
-  // Now return all possible combinations 
-  for(int layer : layers){
-      allCombinations = allHitCombinations(allCombinations, layerToHits[layer]);
-  }
-
-  return allCombinations;
-
-}
-
-float HitCollection::DeltaPhi(HitCollection& h) const  {
-  return acos( cos ( this->Phi() - h.Phi() ));
-}
-
-void HitCollection::printMatchedHits(int level) const{
-  if(m_debug) std::cout << this->hitInfo() << std::endl; 
-  int iHit(1);
-
-  // loop over pointers of subhits  
-  for(HitCollection* subHit : m_assignedHits){
-
-    if(m_debug){
-      for(int i=0; i<level+1; ++i) std::cout << "\t";
-      std::cout << "h" << iHit << " " << subHit->hitInfo() <<  "deltaPhi " << this->DeltaPhi(*subHit) << std::endl;
-      iHit++;
-    }
-
-    // recursively print out hits belonging to any subhits
-    if(subHit->countAssignedHits() > 0){
-      subHit->printMatchedHits(level+1);
-    }
-
-  }
-}
-
-void HitCollection::printMatchedHits() const{
-  this->printMatchedHits(0);
-}
-
-
-std::string HitCollection::hitInfo() const{
-  std::ostringstream s;
-  s << "position: (" << m_hit->X << ", " << m_hit->Y << ", " << m_hit->Z << ")"  // cartesian
-    << " (" << m_hit->Perp() << "," << m_hit->Phi() << ")" // (r, phi, z) cylindrical polars (z already printed, so not shown here)
-    << "\t surface: " << m_hit->SurfaceID
-    << "\t has " << this->countAssignedHits() << " hits. "; 
-  return s.str();
-}
-
-void HitCollection::printHit() const{
-  std::cout << this->hitInfo() << std::endl;
-}
 
 
 void myTrack::calculateTrackParameters( cartesianCoordinate coord ){
   // function to calculate d0, z0 (and in principle theta, phi, qOverP)
+  // relative to the specified coordinate!!!!!
+  // TODO: add calculation if with respect to NOT (0, 0, 0)
   
+  // parameters relative to (0, 0, 0)
   phi = atan2( (m_gradient + m_intercept), 1);
-
   z0 = -1 * (m_intercept / m_gradient);
 
   d0=0; // can't calculate this with straight line

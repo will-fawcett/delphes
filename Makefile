@@ -195,9 +195,16 @@ tmp/analysis/basicTrackReconstructon.$(ObjSuf): \
 	classes/DelphesClasses.h \
 	classes/DelphesFactory.h \
 	modules/FastJetFinder.h \
+	classes/anaClasses.h \
 	external/fastjet/PseudoJet.hh \
 	external/fastjet/JetDefinition.hh \
 	external/fastjet/ClusterSequence.hh
+test_riemannfit$(ExeSuf): \
+	tmp/analysis/test_riemannfit.$(ObjSuf)
+
+tmp/analysis/test_riemannfit.$(ObjSuf): \
+	analysis/test_riemannfit.cpp \
+	external/tricktrack/RiemannFit.h
 trackParameters$(ExeSuf): \
 	tmp/analysis/trackParameters.$(ObjSuf)
 
@@ -264,6 +271,7 @@ tmp/readers/DelphesSTDHEP.$(ObjSuf): \
 	external/ExRootAnalysis/ExRootProgressBar.h
 EXECUTABLE +=  \
 	basicTrackReconstructon$(ExeSuf) \
+	test_riemannfit$(ExeSuf) \
 	trackParameters$(ExeSuf) \
 	DelphesHepMC$(ExeSuf) \
 	DelphesLHEF$(ExeSuf) \
@@ -272,6 +280,7 @@ EXECUTABLE +=  \
 
 EXECUTABLE_OBJ +=  \
 	tmp/analysis/basicTrackReconstructon.$(ObjSuf) \
+	tmp/analysis/test_riemannfit.$(ObjSuf) \
 	tmp/analysis/trackParameters.$(ObjSuf) \
 	tmp/readers/DelphesHepMC.$(ObjSuf) \
 	tmp/readers/DelphesLHEF.$(ObjSuf) \
