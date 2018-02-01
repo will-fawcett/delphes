@@ -82,6 +82,8 @@ class myTrack{
     // Calculate the track parameters relative to some specified coordinate
     void calculateTrackParameters( cartesianCoordinate ); 
 
+    bool isNotFake();
+
 };
 
 // class to 

@@ -617,3 +617,17 @@ void myTrack::calculateTrackParameters( cartesianCoordinate coord ){
   qOverP=0; // straight line : infinite radius of curvature (therefore infinite momentum)  
 
 }
+
+bool myTrack::isNotFake(){
+  // if all of the hits associated to this track have the same particle ID, the the track is not fake
+  
+  std::vector<int> uniqueIDs;
+  for(Hit* hit : m_associatedHits){
+    auto hitID = hit->GetUniqueID();
+    uniqueIDs.push_back(hitID);
+  }
+  for(int i=0; i<uniqueIDs.size()-1; ++i){
+    if(uniqueIDs.at(i) != uniqueIDs.at(i+1) ) return false;
+  }
+  return true;
+}
