@@ -1519,6 +1519,7 @@ tmp/modules/FastJetFinder.$(ObjSuf): \
 	external/fastjet/contribs/Nsubjettiness/Njettiness.hh \
 	external/fastjet/contribs/Nsubjettiness/NjettinessPlugin.hh \
 	external/fastjet/contribs/Nsubjettiness/ExtraRecombiners.hh \
+	external/fastjet/contribs/ValenciaPlugin/ValenciaPlugin.hh \
 	external/fastjet/tools/Filter.hh \
 	external/fastjet/tools/Pruner.hh \
 	external/fastjet/contribs/RecursiveTools/SoftDrop.hh
@@ -1977,6 +1978,11 @@ external/fastjet/internal/LazyTiling9Alt.hh: \
 
 modules/TrackCountingTauTagging.h: \
 	classes/DelphesModule.h
+	@touch $@
+
+external/fastjet/contribs/ValenciaPlugin/ValenciaPlugin.hh: \
+	external/fastjet/JetDefinition.hh \
+	external/fastjet/ClusterSequence.hh
 	@touch $@
 
 external/fastjet/RectangularGrid.hh: \
