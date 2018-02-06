@@ -805,6 +805,11 @@ void TreeWriter::ProcessHit(ExRootTreeBranch *branch, TObjArray *array)
     entry->SurfaceID = candidate->SurfaceID;
 
     entry->Particle = candidate->GetCandidates()->At(0);
+
+    entry->IsPU = candidate->IsPU;
+    entry->PT = candidate->PT;
+
+    entry->intPtKeVID = static_cast<int>( candidate->PT*10E6 ); // *10E6 convert GeV to KeV 
   }
 }
 

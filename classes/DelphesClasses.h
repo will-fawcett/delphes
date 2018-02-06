@@ -512,6 +512,11 @@ public:
   UInt_t SurfaceID; // an ID number corresponding to the surface on which the hit was generated 
   TRef Particle; // reference to generated particle
 
+  Int_t IsPU; // did the hit come from a pileup particle
+  Float_t PT; // pT of the particle that created the hit
+  UInt_t intPtKeVID; // pT of the particle, converted to a int and into KeV, to be used as a poor mans ID method for pileup hits  
+
+  
   static CompBase *fgCompare; //!
   const CompBase *GetCompare() const { return fgCompare; }
 
