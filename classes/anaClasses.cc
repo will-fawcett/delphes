@@ -4,8 +4,10 @@
 #include <utility>
 #include "TMath.h"
 #include "TGraphErrors.h"
+#include "classes/UtilityFunctions.h"
 
 #include <ctime>
+
 
 
 bool sortByHypot( const std::pair< float, float>& a, const std::pair< float, float>& b){
@@ -14,6 +16,67 @@ bool sortByHypot( const std::pair< float, float>& a, const std::pair< float, flo
 
 inline float quotient(float r, float r2, float param1, float param2){
   return pow(r2,4)*param1*param1 - r*r * r2*r2 *(r2*r2 - 4*param2*param2);
+}
+
+bool TrackFitter::associateHitsSimple(hitContainer hc, float minZ, float maxZ){
+
+    //////////////////////////////////////////
+    // Simplest possible algorithm 
+    //////////////////////////////////////////
+
+    float tolerance = 1.0; // [mm]
+
+    // get the inner and outer barrel radii
+    int innerLayerID = m_layerIDs.at(0);
+    int outerLayerID = m_layerIDs.back();
+    float rInner = hc[innerLayerID].at(0)->Perp();
+    float rOuter = hc[outerLayerID].at(0)->Perp(); 
+
+
+    // Draw a line between the hit in the innermost and outermost layer
+    // See if there is a hit on the line in the intermediate layer (within some tolerance)
+    for(auto innerHit : hc[innerLayerID]){
+
+      float zInner = innerHit->Z;
+      float phiInner = innerHit->Phi();
+
+      for(auto outerHit : hc[outerLayerID]){
+
+        // must be in same hemesphere 
+        float deltaPhi = acos(cos( phiInner - outerHit->Phi() )); 
+        if(fabs(deltaPhi) > M_PI) continue; 
+
+        // calculate line parameters 
+        float zOuter = outerHit->Z;
+        lineParameters params = calculateLineParameters(zInner, rInner, zOuter, rOuter);
+
+        // recect if line does not point to within 3 sigma of the luminous region
+        float beamlineIntersect = (0 - params.intercept)/params.gradient;
+        if(fabs(beamlineIntersect) > maxZ) continue;
+
+        // intersection of the line with the intermediate layer
+        float intersect = (582.0 - params.intercept)/params.gradient;
+
+        for(auto intermediateHit : hc[1]){
+          float zInter = intermediateHit->Z;
+          // 
+          if(fabs( zInter - intersect) < 1.0){
+
+            // match
+            std::vector<Hit*> matchedHits;
+            matchedHits.push_back(innerHit);
+            matchedHits.push_back(intermediateHit);
+            matchedHits.push_back(outerHit);
+            myTrack aTrack  = simpleLinearLeastSquaresFit(matchedHits);
+            m_tracks.push_back(aTrack); 
+
+            //plots->trueParticlePt_numRecoTracks->Fill(outerHit->PT, eventWeight);
+
+            //if(aTrack.isNotFake()) nNewMatchedTracksNotFake++;
+          }
+        }
+      }
+    }
 }
 
 float TrackFitter::calculateRPhiWindowInToOut(const float a, const float b, const float r){
@@ -123,18 +186,6 @@ bool TrackFitter::calculateRPhiWindowOutToIn(const float r2, const float a, cons
   return true;  
 }
 
-inline lineParameters calculateLineParameters(float x0, float y0, float x1, float y1){
-  // Calculate the parameters of the straight line passing through the coordinates (x0, y0), (x1, y1)
-
-  float m = (y0 - y1) / (x0 - x1); 
-  float c = (x1*y0 - x0*y1) / (x1 - x0);
-
-  lineParameters params;
-  params.gradient = m;
-  params.intercept = c; 
-  return params;  
-
-}
 
 
 float TrackFitter::calculateZWindowForNextLevel(float y0, float x0, float y2, float x1){
@@ -377,11 +428,11 @@ bool TrackFitter::combineHitsToTracksMatchingInnerAndOutermost(){
   int numIntermediateLayers = m_layerIDs.size() - 2;
   
   if(m_debug){
+    std::cout << "begin combineHitsToTracksMatchingInnerAndOutermost():" << std::endl;
     std::cout << "inner layer is : " << innerLayerID << std::endl;
     std::cout << "outer layer is : " << outerLayerID << std::endl; 
     std::cout << "There are " << numIntermediateLayers << " intermediate layers" << std::endl;
     std::cout << "There are " << m_associatedHitCollection.size() << " hits in the innermost layer." << std::endl;
-    std::cout << "" << std::endl;
   }
 
   // Loop over all matched hit collections
@@ -391,16 +442,16 @@ bool TrackFitter::combineHitsToTracksMatchingInnerAndOutermost(){
 
     std::map<int, std::vector<Hit*>> layerToHitMap = hitCollection.getLayerToHitMap();
     for(Hit* innerHit : layerToHitMap[innerLayerID]){
+      int numTracksCreatedFromThisHit(0);
       for(Hit* outerHit : layerToHitMap[outerLayerID]){
 
         lineParameters trackLine = calculateLineParameters( innerHit->Z, innerHit->Perp(), outerHit->Z, outerHit->Perp() );
 
         if(m_debug){
-          std::cout << "Inner hit: " << innerHit->X << ", " << innerHit->Y << ", " << innerHit->Z << std::endl;
-          std::cout << "outer hit: " << outerHit->X << ", " << outerHit->Y << ", " << outerHit->Z << std::endl;
+          std::cout << "Inner hit (x, y, z): " << innerHit->X << ", " << innerHit->Y << ", " << innerHit->Z << " . r =" << innerHit->Perp() << std::endl;
+          std::cout << "outer hit (x, y, z): " << outerHit->X << ", " << outerHit->Y << ", " << outerHit->Z << " . r =" << outerHit->Perp() << std::endl;
           std::cout << "Line parameters, grad: " << trackLine.gradient << " \tintercept: " << trackLine.intercept << std::endl;
         }
-
 
         /****************************************
          * in order to find the tolerance within which hits in the inner layers can be associated
@@ -456,9 +507,17 @@ bool TrackFitter::combineHitsToTracksMatchingInnerAndOutermost(){
           // Now create a straight line with all points (re-fit the track with the extra hits) 
           myTrack aTrack = simpleLinearLeastSquaresFit(trackHits);
           m_tracks.push_back( aTrack ); 
+          numTracksCreatedFromThisHit++;
         }
 
       } // end loop over hits in outer layer
+      if(m_debug){
+        std::cout << "Number of tracks created from this hit: " << numTracksCreatedFromThisHit << std::endl;
+        GenParticle * particle = (GenParticle*) innerHit->Particle.GetObject();
+        std::cout << "particle had pT=" << particle->PT << " GeV" << std::endl;
+
+        
+      }
     } // end loop over hits in inner layer 
     if(m_debug) std::cout << "" << std::endl;
   } // end loop over hit collections
@@ -504,53 +563,6 @@ bool TrackFitter::combineHitsToTracksInToOut(){
   }
 }
 
-myTrack TrackFitter::simpleLinearLeastSquaresFit(std::vector< Hit* > hits) const {
-  std::vector< std::pair<float, float> > coordinates;
-  for(Hit* hit : hits){
-    coordinates.push_back( std::make_pair(hit->Z, hit->Perp()) ); // coordinates in (r, z)
-  }
-  lineParameters parameters = simpleLinearLeastSquaresFit(coordinates); 
-  return myTrack(parameters, hits); 
-}
-
-
-//TrackFitter::simpleLinearLeastSquaresFit(std::vector<float> xvals, std::vector<float> yvals) const{
-lineParameters TrackFitter::simpleLinearLeastSquaresFit(std::vector<std::pair<float, float> > coordinates) const{
-  // Function to do simple linear least squares fitting (for a straight line)
-  // with the parameters y = mx + c. 
-  // Extracts the best fit for m and c. 
-  // Takes a vector of the coordinates {xi, yi} 
-
-  float X(0), Y(0), XX(0), XY(0);
-  float n = coordinates.size();
-
-  if(m_debug) std::cout << "coordinates (x, y)" << std::endl;
-  for(auto coord : coordinates){
-    float xi = coord.first;
-    float yi = coord.second;
-    if(m_debug) std::cout << xi << ", " << yi << std::endl;
-    X += xi;
-    Y += yi;
-    XX += xi*xi;
-    XY += xi*yi;
-  }
-
-  // gradient
-  float m = (XY*n - X*Y) / (XX*n -X*X);
-
-  // intercept
-  float c = (Y - m*X) / n; 
-
-  if(m_debug){
-    std::cout << "X: " << X << " Y: " << Y << " XX: " << XX << " XY:" << XY << std::endl;
-    std::cout << "(m, c) : " << m << ", " << c << ")" << std::endl; 
-  }
-
-  lineParameters params;
-  params.gradient = m;
-  params.intercept = c; 
-  return params;  
-}
 
 // algorithm not yet written
 bool TrackFitter::combineHitsToTracksOutToIn(){
@@ -559,6 +571,12 @@ bool TrackFitter::combineHitsToTracksOutToIn(){
 
 
 bool TrackFitter::AssociateHits(hitContainer hc){
+  
+  // Make sure these are empty, in case the function is called with a different algorithm 
+  m_associatedHitCollection.Clear();
+  m_tracks.Clear();
+
+
   switch (fitType) { 
     case linearOutToIn:{
       float minZ = m_parameters.at(0);
@@ -588,6 +606,11 @@ bool TrackFitter::AssociateHits(hitContainer hc){
        }
        else return false;
     }
+    case simpleLinear:{
+       float minZ = m_parameters.at(0);
+       float maxZ = m_parameters.at(1);
+       return this->associateHitsSimple(hc, minZ, maxZ);
+    }
     case MAX:{
       return false;
     }
@@ -598,36 +621,4 @@ bool TrackFitter::AssociateHits(hitContainer hc){
 
 std::vector <myTrack> TrackFitter::GetTracks(){
   return m_tracks;
-}
-
-
-
-
-void myTrack::calculateTrackParameters( cartesianCoordinate coord ){
-  // function to calculate d0, z0 (and in principle theta, phi, qOverP)
-  // relative to the specified coordinate!!!!!
-  // TODO: add calculation if with respect to NOT (0, 0, 0)
-  
-  // parameters relative to (0, 0, 0)
-  phi = atan2( (m_gradient + m_intercept), 1);
-  z0 = -1 * (m_intercept / m_gradient);
-
-  d0=0; // can't calculate this with straight line
-  theta=0; // not calculable with 2D line
-  qOverP=0; // straight line : infinite radius of curvature (therefore infinite momentum)  
-
-}
-
-bool myTrack::isNotFake(){
-  // if all of the hits associated to this track have the same particle ID, the the track is not fake
-  
-  std::vector<int> uniqueIDs;
-  for(Hit* hit : m_associatedHits){
-    auto hitID = hit->GetUniqueID();
-    uniqueIDs.push_back(hitID);
-  }
-  for(int i=0; i<uniqueIDs.size()-1; ++i){
-    if(uniqueIDs.at(i) != uniqueIDs.at(i+1) ) return false;
-  }
-  return true;
 }

@@ -3,6 +3,9 @@
 
 #include "classes/DelphesClasses.h"
 #include "classes/HitCollection.h"
+#include "classes/lineParameters.h"
+#include "classes/myTrack.h"
+
 
 #include <vector>
 #include <map>
@@ -16,14 +19,10 @@ enum fitTypes{
   linearOutToIn,
   linearInToOut,
   linearInnerAndOuterMatching, // Anna's suggestion
+  simpleLinear,
   MAX
 };
 
-// store parameters of a line (could be put inside TrackFitter class?)
-struct lineParameters {
-  float gradient;
-  float intercept;
-};
 
 // store cartesian coordinate 
 struct cartesianCoordinate {
@@ -33,58 +32,6 @@ struct cartesianCoordinate {
 };
 
 
-// object to store (or calculate?) track parameters
-// what do we want a track to be defined by? 
-// we need the track parameters: z0, d0, 
-class myTrack{
-  private:
-
-    float m_gradient;
-    float m_intercept;
-    std::vector<Hit*> m_associatedHits; 
-
-  public:
-
-    // track parameters
-    float d0;
-    float z0;
-    float phi;
-    float theta;
-    float qOverP;
-
-    myTrack(){
-      m_gradient=0;
-      m_intercept=0;
-      d0=0;
-      z0=0;
-      phi=0;
-      theta=0;
-      qOverP=0;
-    } // default constructor
-
-
-    myTrack(lineParameters params, std::vector<Hit*> hits){
-      m_gradient = params.gradient;
-      m_intercept = params.intercept;
-      m_associatedHits = hits;
-      calculateTrackParameters();
-    }
-
-    void calculateTrackParameters(){
-      // calculate the track parameters relative to the detector origin
-      cartesianCoordinate coordinate;
-      coordinate.x = 0.0;
-      coordinate.y = 0.0;
-      coordinate.z = 0.0;
-      calculateTrackParameters(coordinate);
-    }
-      
-    // Calculate the track parameters relative to some specified coordinate
-    void calculateTrackParameters( cartesianCoordinate ); 
-
-    bool isNotFake();
-
-};
 
 // class to 
 class TrackFitter{
@@ -94,7 +41,6 @@ class TrackFitter{
     bool m_debug;
 
     // private member variables
-    std::vector< myTrack > m_tracks; 
     fitTypes fitType;
     std::vector<float> m_parameters;
     std::vector<HitCollection> m_associatedHitCollection;
@@ -103,6 +49,7 @@ class TrackFitter{
     // algorithms to associate hits 
     bool associateHitsLinearOutToIn(hitContainer, float, float);
     bool associateHitsLinearInToOut(hitContainer, float, float);
+    bool associateHitsSimple(hitContainer, float, float);
 
     // functions to return tracks from hit collections
     bool combineHitsToTracksInToOut(); 
@@ -115,8 +62,8 @@ class TrackFitter{
     float calculateRPhiWindowInToOut(const float, const float, const float);
 
     // track fitting functions
-    myTrack simpleLinearLeastSquaresFit(std::vector< Hit* > hits) const;
-    lineParameters simpleLinearLeastSquaresFit(std::vector< std::pair< float, float> >) const; 
+    /*myTrack simpleLinearLeastSquaresFit(std::vector< Hit* > hits) const;*/
+    /*lineParameters simpleLinearLeastSquaresFit(std::vector< std::pair< float, float> >) const; */
 
   public:
     
