@@ -77,6 +77,8 @@ bool TrackFitter::associateHitsSimple(hitContainer hc, float minZ, float maxZ){
         }
       }
     }
+
+    return true;
 }
 
 float TrackFitter::calculateRPhiWindowInToOut(const float a, const float b, const float r){
