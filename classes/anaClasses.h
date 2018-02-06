@@ -24,12 +24,6 @@ enum fitTypes{
 };
 
 
-// store cartesian coordinate 
-struct cartesianCoordinate {
-  float x;
-  float y;
-  float z;
-};
 
 
 
@@ -41,6 +35,7 @@ class TrackFitter{
     bool m_debug;
 
     // private member variables
+    std::vector< myTrack > m_tracks;
     fitTypes fitType;
     std::vector<float> m_parameters;
     std::vector<HitCollection> m_associatedHitCollection;

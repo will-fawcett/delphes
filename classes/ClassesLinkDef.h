@@ -71,7 +71,7 @@
 #pragma link C++ class myTrack+;
 #pragma link C++ class TrackFitter+;
 #pragma link C++ class HitCollection+;
-
+#pragma link C++ class lineParameters+;
 
 #endif
 

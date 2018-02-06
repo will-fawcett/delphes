@@ -4,6 +4,12 @@
 #include "classes/DelphesClasses.h"
 #include "classes/lineParameters.h"
 
+// store cartesian coordinate 
+struct cartesianCoordinate {
+  float x;
+  float y;
+  float z;
+};
 
 // object to store (or calculate?) track parameters
 // what do we want a track to be defined by? 

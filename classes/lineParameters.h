@@ -1,5 +1,11 @@
+#ifndef lineParameters_h
+#define lineParameters_h
+
 // store parameters of a line 
-struct lineParameters {
-  float gradient;
-  float intercept;
+class lineParameters {
+  public: 
+    float gradient;
+    float intercept;
 };
+
+#endif // lineParameters_h

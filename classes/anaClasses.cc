@@ -573,8 +573,8 @@ bool TrackFitter::combineHitsToTracksOutToIn(){
 bool TrackFitter::AssociateHits(hitContainer hc){
   
   // Make sure these are empty, in case the function is called with a different algorithm 
-  m_associatedHitCollection.Clear();
-  m_tracks.Clear();
+  m_associatedHitCollection.clear();
+  m_tracks.clear();
 
 
   switch (fitType) { 
