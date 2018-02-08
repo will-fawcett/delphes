@@ -1,4 +1,4 @@
-#include "classes/anaClasses.h" 
+#include "classes/TrackFitter.h" 
 #include "classes/HitCollection.h"
 #include <cmath>
 #include <utility>
@@ -32,6 +32,11 @@ bool TrackFitter::associateHitsSimple(hitContainer hc, float minZ, float maxZ){
     float rInner = hc[innerLayerID].at(0)->Perp();
     float rOuter = hc[outerLayerID].at(0)->Perp(); 
 
+    // Calculate the phi window in which the hits in the outer layer must match
+    float trackPtMin = 1.0; // [GeV] (minimum track pT to consider for phiWindow calculation)
+    float bendingRadius = 1000 * trackPtMin/1.199; // [mm]
+    float phiWindow = fabs( acos(rInner / (2*bendingRadius)) - acos(rOuter / (2*bendingRadius)) );
+
 
     // Draw a line between the hit in the innermost and outermost layer
     // See if there is a hit on the line in the intermediate layer (within some tolerance)
@@ -42,15 +47,16 @@ bool TrackFitter::associateHitsSimple(hitContainer hc, float minZ, float maxZ){
 
       for(auto outerHit : hc[outerLayerID]){
 
-        // must be in same hemesphere 
+        // must be within phi criteria  
         float deltaPhi = acos(cos( phiInner - outerHit->Phi() )); 
         if(fabs(deltaPhi) > M_PI) continue; 
+        if(fabs(deltaPhi) > phiWindow) continue; 
 
-        // calculate line parameters 
+        // calculate parameters of line from inner hit to outer hit 
         float zOuter = outerHit->Z;
         lineParameters params = calculateLineParameters(zInner, rInner, zOuter, rOuter);
 
-        // recect if line does not point to within 3 sigma of the luminous region
+        // reject if line does not point to within 3 sigma of the luminous region
         float beamlineIntersect = (0 - params.intercept)/params.gradient;
         if(fabs(beamlineIntersect) > maxZ) continue;
 
@@ -59,20 +65,21 @@ bool TrackFitter::associateHitsSimple(hitContainer hc, float minZ, float maxZ){
 
         for(auto intermediateHit : hc[1]){
           float zInter = intermediateHit->Z;
-          // 
+
           if(fabs( zInter - intersect) < 1.0){
 
-            // match
+            // reject the intermediate hit if it is also outside the phi window
+            if( acos(cos( phiInner - intermediateHit->Phi())) > phiWindow) continue; 
+
+            // have a further tolerance on the z position of the track in the intermediate layer
+
+            // Three hits are matched -> a track 
             std::vector<Hit*> matchedHits;
             matchedHits.push_back(innerHit);
             matchedHits.push_back(intermediateHit);
             matchedHits.push_back(outerHit);
             myTrack aTrack  = simpleLinearLeastSquaresFit(matchedHits);
             m_tracks.push_back(aTrack); 
-
-            //plots->trueParticlePt_numRecoTracks->Fill(outerHit->PT, eventWeight);
-
-            //if(aTrack.isNotFake()) nNewMatchedTracksNotFake++;
           }
         }
       }

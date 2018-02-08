@@ -31,7 +31,7 @@
 #include "classes/SortableObject.h"
 #include "classes/DelphesClasses.h"
 
-#include "classes/anaClasses.h"
+#include "classes/TrackFitter.h"
 #include "classes/HitCollection.h"
 
 #ifdef __CINT__
