@@ -1,5 +1,5 @@
-#ifndef anaClasses_h
-#define anaClasses_h
+#ifndef TrackFitter_h
+#define TrackFitter_h
 
 #include "classes/DelphesClasses.h"
 #include "classes/HitCollection.h"
@@ -22,8 +22,6 @@ enum fitTypes{
   simpleLinear,
   MAX
 };
-
-
 
 
 
@@ -84,4 +82,4 @@ class TrackFitter{
     std::vector <myTrack> GetTracks();
 
 };
-#endif // anaClasses_h
+#endif // TrackFitter_h
