@@ -11,6 +11,15 @@ struct cartesianCoordinate {
   float z;
 };
 
+enum trackParamAlgo{
+  beamlineConstraint,
+  noBeamlineConstraint,
+  MAX
+};
+
+
+
+
 // object to store (or calculate?) track parameters
 // what do we want a track to be defined by? 
 // we need the track parameters: z0, d0, 
@@ -24,11 +33,14 @@ class myTrack{
   public:
 
     // track parameters
-    float d0;
-    float z0;
-    float phi;
-    float theta;
-    float qOverP;
+    struct parameters{
+      float d0;
+      float z0;
+      float phi;
+      float theta;
+      float qOverP;
+      float pT;
+    }
 
     myTrack(){
       m_gradient=0;
@@ -45,10 +57,10 @@ class myTrack{
       m_gradient = params.gradient;
       m_intercept = params.intercept;
       m_associatedHits = hits;
-      calculateTrackParameters();
+      /*calculateTrackParameters();*/
     }
 
-    void calculateTrackParameters(){
+    bool calculateTrackParameters(){
       // calculate the track parameters relative to the detector origin
       cartesianCoordinate coordinate;
       coordinate.x = 0.0;
@@ -58,7 +70,7 @@ class myTrack{
     }
       
     // Calculate the track parameters relative to some specified coordinate
-    void calculateTrackParameters( cartesianCoordinate ); 
+    bool calculateTrackParameters( cartesianCoordinate ); 
 
     bool isNotFake() const;
 
