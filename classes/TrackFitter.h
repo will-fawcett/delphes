@@ -3,7 +3,7 @@
 
 #include "classes/DelphesClasses.h"
 #include "classes/HitCollection.h"
-#include "classes/lineParameters.h"
+#include "classes/LineParameters.h"
 #include "classes/myTrack.h"
 
 

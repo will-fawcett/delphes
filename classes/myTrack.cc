@@ -1,6 +1,6 @@
 #include "classes/myTrack.h"
 #include <iostream>
-#include "classes/UtilityFunctions.h"
+#include "classes/LineParameters.h"
 
 bool myTrack::calculateTrackParameters( cartesianCoordinate coord, trackParamAlgo algorithm ){
   // function to calculate d0, z0 (and in principle theta, phi, qOverP)
@@ -88,8 +88,9 @@ bool myTrack::trackParametersNoBeamlineConstraint(){
   m_d0 = 0;
   
   // longitudinal parameters calculated from least-squares fit of the three hit points
-  lineParameters params = simpleLinearLeastSquaresFit(m_associatedHits);
-  m_z0 = params.x_intercept; 
+  LineParameters params(m_associatedHits);
+  params.simpleLinearLeastSquaresFit(); 
+  m_z0 = params.x_intercept(); 
 
   m_theta = 0; // careful how this is calculated, may only want this to be defined from [0; pi] 
 

@@ -16,9 +16,9 @@ class LineParameters {
 
     // default constructor
     LineParameters(){
-      gradient = 0;
-      y_intercept = 0;
-      x_intercept =0;
+      m_gradient = 0;
+      m_y_intercept = 0;
+      m_x_intercept =0;
     }
 
     // constructor
@@ -33,10 +33,16 @@ class LineParameters {
       }
     }
 
+    // functions to calculate line parameters
     void simpleLinearLeastSquaresFit();
+    void calculateLineParameters(float x0, float y0, float x1, float y1);
 
+    // accessor functions
+    float gradient() const{ return m_gradient;}
+    float y_intercept() const { return m_y_intercept;}
+    float x_intercept() const { return m_x_intercept;}
 
 
 };
 
-#endif // lineParameters_h
+#endif // LineParameters_h

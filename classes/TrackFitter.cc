@@ -4,7 +4,6 @@
 #include <utility>
 #include "TMath.h"
 #include "TGraphErrors.h"
-#include "classes/UtilityFunctions.h"
 
 #include <ctime>
 
@@ -54,14 +53,15 @@ bool TrackFitter::associateHitsSimple(hitContainer hc, float minZ, float maxZ){
 
         // calculate parameters of line from inner hit to outer hit 
         float zOuter = outerHit->Z;
-        lineParameters params = calculateLineParameters(zInner, rInner, zOuter, rOuter);
+        LineParameters params;
+        params.calculateLineParameters(zInner, rInner, zOuter, rOuter);
 
         // reject if line does not point to within 3 sigma of the luminous region
-        float beamlineIntersect = (0 - params.x_intercept)/params.gradient;
+        float beamlineIntersect = (0 - params.x_intercept())/params.gradient();
         if(fabs(beamlineIntersect) > maxZ) continue;
 
         // intersection of the line with the intermediate layer
-        float intersect = (582.0 - params.x_intercept)/params.gradient;
+        float intersect = (582.0 - params.x_intercept())/params.gradient();
 
         for(auto intermediateHit : hc[1]){
           float zInter = intermediateHit->Z;
@@ -205,9 +205,10 @@ float TrackFitter::calculateZWindowForNextLevel(float y0, float x0, float y2, fl
   float y1 = 0.0;
   
   // line parameters
-  lineParameters params = calculateLineParameters(x0, y0, x1, y1);
+  LineParameters params;
+  params.calculateLineParameters(x0, y0, x1, y1);
 
-  return (y2 - params.y_intercept)/params.gradient; 
+  return (y2 - params.y_intercept())/params.gradient(); 
 }
 
 bool TrackFitter::associateHitsLinearOutToIn(hitContainer hitMap, float minZ, float maxZ){
@@ -454,12 +455,13 @@ bool TrackFitter::combineHitsToTracksMatchingInnerAndOutermost(){
       int numTracksCreatedFromThisHit(0);
       for(Hit* outerHit : layerToHitMap[outerLayerID]){
 
-        lineParameters trackLine = calculateLineParameters( innerHit->Z, innerHit->Perp(), outerHit->Z, outerHit->Perp() );
+        LineParameters trackLine;
+        trackLine.calculateLineParameters( innerHit->Z, innerHit->Perp(), outerHit->Z, outerHit->Perp() );
 
         if(m_debug){
           std::cout << "Inner hit (x, y, z): " << innerHit->X << ", " << innerHit->Y << ", " << innerHit->Z << " . r =" << innerHit->Perp() << std::endl;
           std::cout << "outer hit (x, y, z): " << outerHit->X << ", " << outerHit->Y << ", " << outerHit->Z << " . r =" << outerHit->Perp() << std::endl;
-          std::cout << "Line parameters, grad: " << trackLine.gradient << " \tintercept: " << trackLine.x_intercept << std::endl;
+          std::cout << "Line parameters, grad: " << trackLine.gradient() << " \tintercept: " << trackLine.x_intercept() << std::endl;
         }
 
         /****************************************
@@ -497,7 +499,7 @@ bool TrackFitter::combineHitsToTracksMatchingInnerAndOutermost(){
           float radius = layerToHitMap[layer].at(0)->Perp(); 
 
           // z coordinate of intersection of line and this barrel layer
-          float zCoordinate = (radius - trackLine.x_intercept) / trackLine.gradient; 
+          float zCoordinate = (radius - trackLine.x_intercept()) / trackLine.gradient();
 
           for(Hit* intermediateHit : layerToHitMap[layer]){
 

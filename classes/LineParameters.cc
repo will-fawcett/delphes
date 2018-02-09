@@ -2,20 +2,16 @@
 
 
 
-inline lineParameters calculateLineParameters(float x0, float y0, float x1, float y1){
+void LineParameters::calculateLineParameters(float x0, float y0, float x1, float y1){
   // Calculate the parameters of the straight line passing through the coordinates (x0, y0), (x1, y1)
 
-  float m = (y0 - y1) / (x0 - x1); 
-  float c = (x1*y0 - x0*y1) / (x1 - x0);
-
-  lineParameters params;
-  params.gradient = m;
-  params.y_intercept = c; 
-  params.x_intercept = -1*c/m; 
-  return params;  
+  m_gradient = (y0 - y1) / (x0 - x1); 
+  m_y_intercept  = (x1*y0 - x0*y1) / (x1 - x0);
+  m_x_intercept = -1*m_y_intercept/m_gradient; 
 }
 
-void simpleLinearLeastSquaresFit() {
+
+void LineParameters::simpleLinearLeastSquaresFit() {
   // Function to do simple linear least squares fitting (for a straight line)
   // with the parameters y = mx + c. 
   // Extracts the best fit for m and c. 
@@ -37,10 +33,10 @@ void simpleLinearLeastSquaresFit() {
   m_gradient = (XY*n - X*Y) / (XX*n -X*X);
 
   // y-intercept
-  m_y_intercept = (Y - m*X) / n; 
+  m_y_intercept = (Y - m_gradient*X) / n; 
   
   // x-intercept
-  m_x_intercept = -1*c/m;
+  m_x_intercept = -1*m_y_intercept/m_gradient;
 
 }
 

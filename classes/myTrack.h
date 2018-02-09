@@ -2,7 +2,6 @@
 #define myTrack_h
 
 #include "classes/DelphesClasses.h"
-#include "classes/lineParameters.h"
 
 // store cartesian coordinate 
 struct cartesianCoordinate {
