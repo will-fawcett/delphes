@@ -35,6 +35,7 @@ class myTrack{
     float m_z0;
     float m_phi;
     float m_theta;
+    float m_eta;
     /*float m_qOverP;*/
     float m_pT;
 
@@ -88,12 +89,12 @@ class myTrack{
     bool calculateTrackParameters( cartesianCoordinate, trackParamAlgo ); 
 
     // accessor functions
-    float Pt() {return m_pT;}
-    float Z0() {return m_z0;}
-    float Theta() {return m_theta;}
-    float Phi() {return m_phi;}
-    float D0() {return m_d0;}
-    float Eta() {return -1*log( tan( m_theta/2.0 ));} 
+    float Pt() const {return m_pT;}
+    float Z0() const {return m_z0;}
+    float Theta() const {return m_theta;}
+    float Phi() const {return m_phi;}
+    float D0() const {return m_d0;}
+    float Eta() const {return m_eta;} 
 
     // test if track is a fake track 
     bool isFake() const;

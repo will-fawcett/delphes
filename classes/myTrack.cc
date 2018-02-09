@@ -27,7 +27,6 @@ bool myTrack::calculateTrackParameters( cartesianCoordinate coord, trackParamAlg
 bool myTrack::trackParametersNoBeamlineConstraint(){
   // calculates the track parameters only using the three points in the triplet
 
-  std::cout << "trackParametersNoBeamlineConstraint()" << std::endl;
 
   if(m_associatedHits.size() != 3){
     std::cerr << "ERROR: more than three hits associate to this track. Algorith is not compatible." << std::endl;
@@ -72,13 +71,6 @@ bool myTrack::trackParametersNoBeamlineConstraint(){
 
   float radius = hypotf( (x1-a), (y1-b) );
 
-  std::cout << "(xi, yi) : "
-    << x1 << ", " << y1 << "\t"
-    << x2 << ", " << y2 << "\t"
-    << x3 << ", " << y3 << "\t"
-    << std::endl;
-
-  std::cout << "(a, b) and radius : " << a << ", " << b << "\t" << radius << std::endl;
 
   // transverse momentum
   m_pT = 1.199 * fabs(radius/1000); // for a 4T magnetic field and radius in [m], divide by 1000 as length units in [mm]
@@ -93,7 +85,21 @@ bool myTrack::trackParametersNoBeamlineConstraint(){
   m_z0 = params.x_intercept(); 
 
   m_theta = 0; // careful how this is calculated, may only want this to be defined from [0; pi] 
+  m_eta = -1*log( tan( m_theta/2.0 ));
 
+  /************************
+  // print out some info
+  std::cout << "trackParametersNoBeamlineConstraint()" << std::endl;
+  std::cout << "(xi, yi) : "
+    << x1 << ", " << y1 << "\t"
+    << x2 << ", " << y2 << "\t"
+    << x3 << ", " << y3 << "\t"
+    << std::endl;
+  std::cout << "(a, b) and radius : " << a << ", " << b << "\t" << radius << std::endl;
+  std::cout << "isFake: " << this->isFake() << std::endl;
+  std::cout << "track pT: " << m_pT << std::endl;
+  std::cout << "hit 1 pT: " << hit1->PT << " \t2: " << hit2->PT << "\t3: " << hit3->PT << std::endl;
+  ************************/
 
 }
 
@@ -172,6 +178,7 @@ bool myTrack::trackParametersBeamlineConstraint(){
   // Assign the track parameters
   m_z0 = z1 - s1* ( z3 - z1 ) / (s3 - s1);
   m_theta = atan2( (s3-s1), (z3-z1) );  // CHECK this is correct, may only want from [0:pi]
+  m_eta = -1*log( tan( m_theta/2.0 ));
   m_d0 = 0.0; // by definition (beamline constraint) 
   m_pT = pT;
   m_phi = phi;
