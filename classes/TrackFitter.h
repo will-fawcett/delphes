@@ -54,10 +54,6 @@ class TrackFitter{
     bool calculateRPhiWindowOutToIn(const float, const float, const float);
     float calculateRPhiWindowInToOut(const float, const float, const float);
 
-    // track fitting functions
-    /*myTrack simpleLinearLeastSquaresFit(std::vector< Hit* > hits) const;*/
-    /*lineParameters simpleLinearLeastSquaresFit(std::vector< std::pair< float, float> >) const; */
-
   public:
     
     // constructor 

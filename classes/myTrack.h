@@ -11,10 +11,11 @@ struct cartesianCoordinate {
   float z;
 };
 
+// enumeration for different track parameter algorithms 
 enum trackParamAlgo{
   beamlineConstraint,
   noBeamlineConstraint,
-  MAX
+  MAXIMUM
 };
 
 
@@ -26,52 +27,77 @@ enum trackParamAlgo{
 class myTrack{
   private:
 
-    float m_gradient;
-    float m_intercept;
+    /*float m_gradient;*/
+    /*float m_intercept;*/
     std::vector<Hit*> m_associatedHits; 
+
+    // track parameters
+    float m_d0;
+    float m_z0;
+    float m_phi;
+    float m_theta;
+    /*float m_qOverP;*/
+    float m_pT;
+
+    bool m_initialised;
+
+    // functions to calculate track parameters 
+    bool trackParametersBeamlineConstraint();
+    bool trackParametersNoBeamlineConstraint();
 
   public:
 
-    // track parameters
-    struct parameters{
-      float d0;
-      float z0;
-      float phi;
-      float theta;
-      float qOverP;
-      float pT;
-    }
+
 
     myTrack(){
-      m_gradient=0;
-      m_intercept=0;
-      d0=0;
-      z0=0;
-      phi=0;
-      theta=0;
-      qOverP=0;
+      m_d0=0;
+      m_z0=0;
+      m_phi=0;
+      m_theta=0;
+      /*m_qOverP=0;*/
+      m_pT=0;
+      m_initialised = false;
+      m_associatedHits = {};
     } // default constructor
 
 
-    myTrack(lineParameters params, std::vector<Hit*> hits){
-      m_gradient = params.gradient;
-      m_intercept = params.intercept;
+    // constructor 
+    myTrack(std::vector<Hit*> hits){
       m_associatedHits = hits;
-      /*calculateTrackParameters();*/
+      m_initialised = calculateTrackParameters(); // call default track parameter calculation
     }
 
+    // Calculate the track parameters relative to the detector origin, uses default algorithm
     bool calculateTrackParameters(){
-      // calculate the track parameters relative to the detector origin
       cartesianCoordinate coordinate;
       coordinate.x = 0.0;
       coordinate.y = 0.0;
       coordinate.z = 0.0;
-      calculateTrackParameters(coordinate);
+      m_initialised = calculateTrackParameters(coordinate, beamlineConstraint); // note the default algorithm is beamlineConstraint (!)
+    }
+
+    // Calculate track parameters relative to the detector origin, using a specified algorithm
+    bool calculateTrackParameters(trackParamAlgo algo){
+      cartesianCoordinate coordinate;
+      coordinate.x = 0.0;
+      coordinate.y = 0.0;
+      coordinate.z = 0.0;
+      m_initialised = calculateTrackParameters(coordinate, algo);
     }
       
-    // Calculate the track parameters relative to some specified coordinate
-    bool calculateTrackParameters( cartesianCoordinate ); 
+    // Calculate the track parameters relative to some specified coordinate, with a specified algorithm
+    bool calculateTrackParameters( cartesianCoordinate, trackParamAlgo ); 
 
+    // accessor functions
+    float Pt() {return m_pT;}
+    float Z0() {return m_z0;}
+    float Theta() {return m_theta;}
+    float Phi() {return m_phi;}
+    float D0() {return m_d0;}
+    float Eta() {return -1*log( tan( m_theta/2.0 ));} 
+
+    // test if track is a fake track 
+    bool isFake() const;
     bool isNotFake() const;
 
 };

@@ -57,11 +57,11 @@ bool TrackFitter::associateHitsSimple(hitContainer hc, float minZ, float maxZ){
         lineParameters params = calculateLineParameters(zInner, rInner, zOuter, rOuter);
 
         // reject if line does not point to within 3 sigma of the luminous region
-        float beamlineIntersect = (0 - params.intercept)/params.gradient;
+        float beamlineIntersect = (0 - params.x_intercept)/params.gradient;
         if(fabs(beamlineIntersect) > maxZ) continue;
 
         // intersection of the line with the intermediate layer
-        float intersect = (582.0 - params.intercept)/params.gradient;
+        float intersect = (582.0 - params.x_intercept)/params.gradient;
 
         for(auto intermediateHit : hc[1]){
           float zInter = intermediateHit->Z;
@@ -78,7 +78,7 @@ bool TrackFitter::associateHitsSimple(hitContainer hc, float minZ, float maxZ){
             matchedHits.push_back(innerHit);
             matchedHits.push_back(intermediateHit);
             matchedHits.push_back(outerHit);
-            myTrack aTrack  = simpleLinearLeastSquaresFit(matchedHits);
+            myTrack aTrack(matchedHits); 
             m_tracks.push_back(aTrack); 
           }
         }
@@ -207,7 +207,7 @@ float TrackFitter::calculateZWindowForNextLevel(float y0, float x0, float y2, fl
   // line parameters
   lineParameters params = calculateLineParameters(x0, y0, x1, y1);
 
-  return (y2 - params.intercept)/params.gradient; 
+  return (y2 - params.y_intercept)/params.gradient; 
 }
 
 bool TrackFitter::associateHitsLinearOutToIn(hitContainer hitMap, float minZ, float maxZ){
@@ -459,7 +459,7 @@ bool TrackFitter::combineHitsToTracksMatchingInnerAndOutermost(){
         if(m_debug){
           std::cout << "Inner hit (x, y, z): " << innerHit->X << ", " << innerHit->Y << ", " << innerHit->Z << " . r =" << innerHit->Perp() << std::endl;
           std::cout << "outer hit (x, y, z): " << outerHit->X << ", " << outerHit->Y << ", " << outerHit->Z << " . r =" << outerHit->Perp() << std::endl;
-          std::cout << "Line parameters, grad: " << trackLine.gradient << " \tintercept: " << trackLine.intercept << std::endl;
+          std::cout << "Line parameters, grad: " << trackLine.gradient << " \tintercept: " << trackLine.x_intercept << std::endl;
         }
 
         /****************************************
@@ -497,7 +497,7 @@ bool TrackFitter::combineHitsToTracksMatchingInnerAndOutermost(){
           float radius = layerToHitMap[layer].at(0)->Perp(); 
 
           // z coordinate of intersection of line and this barrel layer
-          float zCoordinate = (radius - trackLine.intercept) / trackLine.gradient; 
+          float zCoordinate = (radius - trackLine.x_intercept) / trackLine.gradient; 
 
           for(Hit* intermediateHit : layerToHitMap[layer]){
 
@@ -514,7 +514,7 @@ bool TrackFitter::combineHitsToTracksMatchingInnerAndOutermost(){
         if(nMatchedHits == numIntermediateLayers){
 
           // Now create a straight line with all points (re-fit the track with the extra hits) 
-          myTrack aTrack = simpleLinearLeastSquaresFit(trackHits);
+          myTrack aTrack(trackHits);
           m_tracks.push_back( aTrack ); 
           numTracksCreatedFromThisHit++;
         }
@@ -559,11 +559,11 @@ bool TrackFitter::combineHitsToTracksInToOut(){
     for(auto& combination : hitCombinations){
       if(m_debug) std::cout << "This combination has " << combination.size() << " hits." << std::endl;
 
-      myTrack aTrack = simpleLinearLeastSquaresFit(combination);
+      myTrack aTrack(combination);
 
       // if track has z0 outside of the defined window, reject the track
       float maxZ = m_parameters.at(1);
-      if(fabs(aTrack.z0) > maxZ){
+      if(fabs(aTrack.Z0()) > maxZ){
         //std::cout << "Track found outside luminous region" << std::endl;
         continue;
       }
