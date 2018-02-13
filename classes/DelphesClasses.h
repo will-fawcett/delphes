@@ -456,6 +456,8 @@ public:
   Float_t ErrorD0; // track transverse impact parameter error
   Float_t ErrorDZ; // track longitudinal impact parameter error
 
+  Int_t IsPU; // 0 or 1 for tracks from particles from pile-up interactions (1 for pileup) 
+
   TRef Particle; // reference to generated particle
 
   Int_t VertexIndex; // reference to vertex
@@ -510,8 +512,10 @@ public:
   Float_t T;  
 
   UInt_t SurfaceID; // an ID number corresponding to the surface on which the hit was generated 
-  TRef Particle; // reference to generated particle
 
+  // Particle properties
+  TRef Particle; // reference to generated particle
+  Int_t PID; // Particle ID
   Int_t IsPU; // did the hit come from a pileup particle
   Float_t PT; // pT of the particle that created the hit
   UInt_t intPtKeVID; // pT of the particle, converted to a int and into KeV, to be used as a poor mans ID method for pileup hits  

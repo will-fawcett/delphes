@@ -394,6 +394,8 @@ void TreeWriter::ProcessTracks(ExRootTreeBranch *branch, TObjArray *array)
     entry->Z = initialPosition.Z();
     entry->T = initialPosition.T()*1.0E-3/c_light;
 
+    entry->IsPU = candidate->IsPU;
+
     entry->Particle = particle;
 
     entry->VertexIndex = candidate->ClusterIndex;
@@ -808,6 +810,7 @@ void TreeWriter::ProcessHit(ExRootTreeBranch *branch, TObjArray *array)
 
     entry->IsPU = candidate->IsPU;
     entry->PT = candidate->PT;
+    entry->PID = candidate->PID; 
 
     entry->intPtKeVID = static_cast<int>( candidate->PT*10E6 ); // *10E6 convert GeV to KeV 
   }
