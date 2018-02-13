@@ -39,6 +39,7 @@ public:
 
 private:
 
+  bool m_debug;
   Int_t fNVertexToAssociate;
 
   const TObjArray *fInputArray;

@@ -69,6 +69,10 @@ HitFinder::~HitFinder()
 void HitFinder::Init()
 {
 
+  m_debug=false;
+
+  if(m_debug) std::cout << "HitFinder::Init()" << std::endl;
+
   ////////////////////////////////////////////////////
   // Input parameters (copied from ParticlePropagator) 
   ////////////////////////////////////////////////////
@@ -85,6 +89,7 @@ void HitFinder::Init()
   
   fBz = GetDouble("Bz", 0.0);
 
+  // Name of module useful for debugging 
 
   // Output arrays 
   fHitOutputArray = ExportArray(GetString("OutputArray", "hits"));
@@ -111,11 +116,13 @@ void HitFinder::Init()
   // If an asymetrical tracker design was needed, then a hack would be required
   for(int i=0; i<endcapZPositions.GetSize(); ++i){
     if( endcapZPositions[i].GetDouble() < 0.0){
-      std::cout << "WARNIGN: HitFinder: Negative endcap z positions detected, which will be ignored. The user need only input positive values, and a symmetrical detector design is assumed." << std::endl;
+      std::cerr << "WARNIGN: HitFinder: Negative endcap z positions detected, which will be ignored. The user need only input positive values, and a symmetrical detector design is assumed." << std::endl;
       continue;
     }
     fEndcapZPositions.push_back( endcapZPositions[i].GetDouble() ); 
   }
+
+  if(m_debug) std::cout << "Init(): Defined input and output arrays" << std::endl;
 
 }
 
@@ -130,6 +137,8 @@ void HitFinder::Finish()
 
 void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int SurfaceID, bool removeEndcaps, bool removeBarrel)
 {
+
+  if(m_debug) std::cout << "ParticlePropagator()" << std::endl;
 
   Candidate *candidate, *mother;
   TLorentzVector candidatePosition, candidateMomentum, beamSpotPosition;
@@ -374,17 +383,7 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
         candidate->InitialPosition = candidatePosition;
         candidate->Position.SetXYZT(x_t*1.0E3, y_t*1.0E3, z_t*1.0E3, candidatePosition.T() + t*c_light*1.0E3);
 
-        candidate->Momentum = candidateMomentum;
-
-        candidate->L = l*1.0E3;
-
-        candidate->Xd = xd*1.0E3;
-        candidate->Yd = yd*1.0E3;
-        candidate->Zd = zd*1.0E3;
-
-        candidate->AddCandidate(mother);
-
-
+        // do this ASAP (performance) 
         if(removeEndcaps){
           if( fabs(candidate->Position.Perp()) < 0.9999*RADIUS_MAX*1E3) continue; // 0.9999 since radii of hit is slightly smaller than radii of surface
         }
@@ -393,9 +392,17 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
           if( fabs( candidate->Position.Z() ) < 0.9999*HalfLengthMax*1E3) continue;
         }
 
+        candidate->Momentum = candidateMomentum;
+        candidate->L = l*1.0E3;
+        candidate->Xd = xd*1.0E3;
+        candidate->Yd = yd*1.0E3;
+        candidate->Zd = zd*1.0E3;
+        candidate->AddCandidate(mother);
+
         // add surface ID to hit
         candidate->SurfaceID = SurfaceID; 
 
+        std::cout << "TMath::Abs(candidate->PID): " << TMath::Abs(candidate->PID) << std::endl;
 
         switch(TMath::Abs(candidate->PID))
         {
@@ -416,6 +423,7 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
 void HitFinder::Process()
 {
 
+  if(m_debug) std::cout << "Process()" << std::endl;
   int SurfaceID(0);
 
   // Creat hits for all barrel layers
