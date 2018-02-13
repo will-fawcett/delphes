@@ -35,6 +35,7 @@ bool TrackFitter::associateHitsSimple(hitContainer hc, float minZ, float maxZ){
     float trackPtMin = 1.0; // [GeV] (minimum track pT to consider for phiWindow calculation)
     float bendingRadius = 1000 * trackPtMin/1.199; // [mm]
     float phiWindow = fabs( acos(rInner / (2*bendingRadius)) - acos(rOuter / (2*bendingRadius)) );
+    phiWindow *= 2; // multiply by two, to have the deviation travelling in either direction. 
 
 
     // Draw a line between the hit in the innermost and outermost layer
@@ -57,16 +58,17 @@ bool TrackFitter::associateHitsSimple(hitContainer hc, float minZ, float maxZ){
         params.calculateLineParameters(zInner, rInner, zOuter, rOuter);
 
         // reject if line does not point to within 3 sigma of the luminous region
-        float beamlineIntersect = (0 - params.x_intercept())/params.gradient();
+        float beamlineIntersect = params.x_intercept() ;
         if(fabs(beamlineIntersect) > maxZ) continue;
 
         // intersection of the line with the intermediate layer
-        float intersect = (582.0 - params.x_intercept())/params.gradient();
+        float intersect = (582.0 - params.y_intercept())/params.gradient();
 
         for(auto intermediateHit : hc[1]){
           float zInter = intermediateHit->Z;
 
-          if(fabs( zInter - intersect) < 1.0){
+          // only select if intermediate hit matches within tolerance 
+          if(fabs( zInter - intersect) < tolerance){
 
             // reject the intermediate hit if it is also outside the phi window
             if( acos(cos( phiInner - intermediateHit->Phi())) > phiWindow) continue; 

@@ -95,6 +95,7 @@ class myTrack{
     float Phi() const {return m_phi;}
     float D0() const {return m_d0;}
     float Eta() const {return m_eta;} 
+    float GetHitPtAtLayer(int layerID) const {return m_associatedHits.at(layerID)->PT;}
 
     // test if track is a fake track 
     bool isFake() const;

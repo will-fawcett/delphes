@@ -106,9 +106,9 @@ bool myTrack::trackParametersNoBeamlineConstraint(){
 
 
 bool myTrack::trackParametersBeamlineConstraint(){
-  // assumes the track originates from (0, 0, z0)
-  // Calculates the track parameters using the origin and two other points, corresponding to the innermost and outermost hit
 
+  // Assumes the track originates from (0, 0, z0)
+  // Calculates the track parameters using the origin and two other points, corresponding to the innermost and outermost hit
   
   if(m_associatedHits.size() != 3){
     std::cerr << "ERROR: more than three hits associate to this track. Algorith is not compatible." << std::endl;
@@ -129,7 +129,6 @@ bool myTrack::trackParametersBeamlineConstraint(){
     return false;
   }
 
-  
   // copy of hit coordinates
   float x1 = hit1->X;
   float y1 = hit1->Y; 
@@ -173,12 +172,18 @@ bool myTrack::trackParametersBeamlineConstraint(){
   float s3 = radius * PHI3; 
 
   // phi angle given by line tangent to the circle at (0,0) 
-  float phi = atan2(-a, b);
+  // atan2(y, x)
+  float phi = atan2f(-b, a); // will return [-pi, pi] 
 
   // Assign the track parameters
   m_z0 = z1 - s1* ( z3 - z1 ) / (s3 - s1);
-  m_theta = atan2( (s3-s1), (z3-z1) );  // CHECK this is correct, may only want from [0:pi]
-  m_eta = -1*log( tan( m_theta/2.0 ));
+  m_theta = atan2f( (s3-s1), (z3-z1) );  // atan2f returns theta in [-pi, pi] 
+  //if(m_theta < 0) m_theta += 2*M_PI; 
+  m_eta = -1*log( tan( fabs(m_theta)/2.0 )); // take fabs(theta), want -pi and pi to be treated the same
+  if(isnan(m_eta)){
+    std::cerr << "trackParametersBeamlineConstraint(): ERROR: Eta calculation performed incorrectly." << std::endl; 
+    return false;
+  }
   m_d0 = 0.0; // by definition (beamline constraint) 
   m_pT = pT;
   m_phi = phi;
