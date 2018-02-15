@@ -438,19 +438,19 @@ void HitFinder::Process()
   int SurfaceID(0);
 
   // Creat hits for all barrel layers
-  clock_t begin = clock();
+  //clock_t begin = clock();
   int hitNumber(0);
   for(auto barrelRadius : fBarrelLayerRadii){
     std::vector<TLorentzVector> hits;
     bool removeEndcaps(true);
     bool removeBarrel(false);
     ParticlePropagator(barrelRadius, fBarrelLength, SurfaceID, removeEndcaps, removeBarrel); // all barrels have the same length 
-
     SurfaceID++;
   }
-  clock_t end = clock();
-  double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
-  std::cout << " Time for call of ParticlePropagator()x3: " << elapsed_secs << std::endl;
+
+  //clock_t end = clock();
+  //double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+  //std::cout << " Time for call of ParticlePropagator()x3: " << elapsed_secs << std::endl;
 
   // Create hits for endcap layers
   for(auto endcapZ : fEndcapZPositions){
