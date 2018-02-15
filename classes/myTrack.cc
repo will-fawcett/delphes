@@ -182,6 +182,10 @@ bool myTrack::trackParametersBeamlineConstraint(){
   m_eta = -1*log( tan( fabs(m_theta)/2.0 )); // take fabs(theta), want -pi and pi to be treated the same
   if(isnan(m_eta)){
     std::cerr << "trackParametersBeamlineConstraint(): ERROR: Eta calculation performed incorrectly." << std::endl; 
+    std::cerr << "m_theta: " << m_theta << std::endl;
+    std::cerr << "tan(fabs(m_theta)/2.0): " << tan(fabs(m_theta)/2.0) << std::endl;
+    std::cerr << "log(tan(fabs(m_theta))): " << log( tan(fabs(m_theta)/2.0) ) << std::endl;
+    std::cerr << "Curious and curiouser ... " << std::endl;
     return false;
   }
   m_d0 = 0.0; // by definition (beamline constraint) 
