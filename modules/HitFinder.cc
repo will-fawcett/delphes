@@ -41,9 +41,7 @@
 #include <string>
 
 // testing
-#include "TCanvas.h"
-#include "TH3.h"
-#include "TGraph2D.h"
+#include <ctime>
 
 using namespace std;
 
@@ -151,12 +149,13 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
   Double_t tmp, discr, discr2;
   Double_t delta, gammam, omega, asinrho;
   Double_t rcu, rc2, xd, yd, zd;
-  Double_t l, d0, dz, p, ctgTheta, phip, etap, alpha;
-  Double_t bsx, bsy, bsz;
+  Double_t pathLength, d0, dz, momentum, ctgTheta, phip, etap, alpha;
+  //Double_t bsx, bsy, bsz;
 
 
   const Double_t c_light = 2.99792458E8;
 
+  /***************
   if (!fBeamSpotInputArray || fBeamSpotInputArray->GetSize () == 0)
     beamSpotPosition.SetXYZT(0.0, 0.0, 0.0, 0.0);
   else
@@ -164,6 +163,7 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
     Candidate &beamSpotCandidate = *((Candidate *) fBeamSpotInputArray->At(0));
     beamSpotPosition = beamSpotCandidate.Position;
   }
+  ******************/
 
   // process all candidates 
   fItInputArray->Reset();
@@ -175,17 +175,24 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
     y = candidatePosition.Y()*1.0E-3;
     z = candidatePosition.Z()*1.0E-3;
 
+    /**************
+     * WJF optimize 
     bsx = beamSpotPosition.X()*1.0E-3;
     bsy = beamSpotPosition.Y()*1.0E-3;
     bsz = beamSpotPosition.Z()*1.0E-3;
+    ***************/
 
-    charge = candidate->Charge;
 
     // Check that particle position is inside the cylinder that defines the detector volume 
     // NB TMath::Hypot(x, y) calculates hypotenuse see https://en.wikipedia.org/wiki/Hypot 
     if(TMath::Hypot(x, y) > RADIUS_MAX || TMath::Abs(z) > HalfLengthMax){
       continue;
     }
+
+    charge = candidate->Charge;
+
+    // Were only interested in charged particles, since we're looking for hits 
+    if(TMath::Abs(charge) < 1.0E-9) continue; 
 
     px = candidateMomentum.Px();
     py = candidateMomentum.Py();
@@ -197,9 +204,6 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
     if(pt2 < 1.0E-9){
       continue;
     }
-
-    // Were only interested in charged particles, since we're looking for hits 
-    if(TMath::Abs(charge) < 1.0E-9) continue; 
 
     if(TMath::Abs(charge) < 1.0E-9 || TMath::Abs(fBz) < 1.0E-9)
     {
@@ -231,14 +235,18 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
       y_t = y + py*t;
       z_t = z + pz*t;
 
-      l = TMath::Sqrt( (x_t - x)*(x_t - x) + (y_t - y)*(y_t - y) + (z_t - z)*(z_t - z));
 
       mother = candidate;
       candidate = static_cast<Candidate*>(candidate->Clone());
 
       candidate->InitialPosition = candidatePosition;
       candidate->Position.SetXYZT(x_t*1.0E3, y_t*1.0E3, z_t*1.0E3, candidatePosition.T() + t*e*1.0E3);
-      candidate->L = l*1.0E3;
+      /*********
+       * WJF optimize
+      pathLength = TMath::Sqrt( (x_t - x)*(x_t - x) + (y_t - y)*(y_t - y) + (z_t - z)*(z_t - z));
+      candidate->L = pathLength*1.0E3;
+      *
+      * ************/
 
       candidate->Momentum = candidateMomentum;
       candidate->AddCandidate(mother);
@@ -308,11 +316,17 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
 
       // calculate additional track parameters (correct for beamspot position)
 
+      /****************
+       *
+       * WJF opimization
+       *
       d0        = ((x - bsx) * py - (y - bsy) * px) / pt;
       dz        = z - ((x - bsx) * px + (y - bsy) * py) / pt * (pz / pt);
-      //std::cout << "Calculated dz " << dz << std::endl; 
-      p         = candidateMomentum.P();
+      momentum  = candidateMomentum.P();
       ctgTheta  = 1.0 / TMath::Tan (candidateMomentum.Theta());
+      * 
+      *
+      ***************/
 
 
       // 3. time evaluation t = TMath::Min(t_r, t_z)
@@ -363,19 +377,26 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
 
       // compute path length for an helix
 
+      /*********
+       * WJF optimize 
       alpha = pz*1.0E9 / c_light / gammam;
       l = t * TMath::Sqrt(alpha*alpha + r*r*omega*omega);
+      *******/
 
       if(r_t > 0.0)
       {
 
         // store these variables before cloning
+        /****************
+         * WJF: optimization
+         *
         candidate->D0 = d0*1.0E3;
         candidate->DZ = dz*1.0E3;
-        candidate->P  = p;
-        candidate->PT = pt;
+        candidate->P  = momentum;
         candidate->CtgTheta = ctgTheta;
         candidate->Phi = phip;
+        *******************/
+        candidate->PT = pt;
 
         mother = candidate;
         candidate = static_cast<Candidate*>(candidate->Clone());
@@ -393,7 +414,7 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
         }
 
         candidate->Momentum = candidateMomentum;
-        candidate->L = l*1.0E3;
+        //candidate->L = pathLength*1.0E3; // WJF optimization
         candidate->Xd = xd*1.0E3;
         candidate->Yd = yd*1.0E3;
         candidate->Zd = zd*1.0E3;
@@ -402,19 +423,9 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
         // add surface ID to hit
         candidate->SurfaceID = SurfaceID; 
 
-        std::cout << "TMath::Abs(candidate->PID): " << TMath::Abs(candidate->PID) << std::endl;
+        // Add candidate to output array  
+        fHitOutputArray->Add(candidate);
 
-        switch(TMath::Abs(candidate->PID))
-        {
-          case 11:
-            fHitOutputArray->Add(candidate);
-            break;
-          case 13:
-            fHitOutputArray->Add(candidate);
-            break;
-          default:
-            fHitOutputArray->Add(candidate);
-        }
       }
     }
   }
@@ -427,14 +438,19 @@ void HitFinder::Process()
   int SurfaceID(0);
 
   // Creat hits for all barrel layers
+  clock_t begin = clock();
   int hitNumber(0);
   for(auto barrelRadius : fBarrelLayerRadii){
     std::vector<TLorentzVector> hits;
     bool removeEndcaps(true);
     bool removeBarrel(false);
     ParticlePropagator(barrelRadius, fBarrelLength, SurfaceID, removeEndcaps, removeBarrel); // all barrels have the same length 
+
     SurfaceID++;
   }
+  clock_t end = clock();
+  double elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
+  std::cout << " Time for call of ParticlePropagator()x3: " << elapsed_secs << std::endl;
 
   // Create hits for endcap layers
   for(auto endcapZ : fEndcapZPositions){
