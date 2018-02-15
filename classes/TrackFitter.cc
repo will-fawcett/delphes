@@ -8,6 +8,13 @@
 #include <ctime>
 
 
+inline float quickDeltaPhi(float phi1, float phi2){
+  if(phi1<0) phi1+= 2*M_PI;
+  if(phi2<0) phi2+= 2*M_PI;
+  float dPhi= fabs(phi1 - phi2);
+  if(dPhi > M_PI) dPhi = 2*M_PI - dPhi;
+  return dPhi; 
+}
 
 bool sortByHypot( const std::pair< float, float>& a, const std::pair< float, float>& b){
   return (TMath::Hypot(a.first, a.second) < TMath::Hypot(b.first, b.second));
@@ -17,7 +24,7 @@ inline float quotient(float r, float r2, float param1, float param2){
   return pow(r2,4)*param1*param1 - r*r * r2*r2 *(r2*r2 - 4*param2*param2);
 }
 
-bool TrackFitter::associateHitsSimple(hitContainer hc, float minZ, float maxZ){
+bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
 
     //////////////////////////////////////////
     // Simplest possible algorithm 
@@ -40,17 +47,15 @@ bool TrackFitter::associateHitsSimple(hitContainer hc, float minZ, float maxZ){
 
     // Draw a line between the hit in the innermost and outermost layer
     // See if there is a hit on the line in the intermediate layer (within some tolerance)
-    for(auto innerHit : hc[innerLayerID]){
+    for(auto& innerHit : hc[innerLayerID]){
 
       float zInner = innerHit->Z;
       float phiInner = innerHit->Phi();
 
-      for(auto outerHit : hc[outerLayerID]){
+      for(auto& outerHit : hc[outerLayerID]){
 
         // must be within phi criteria  
-        float deltaPhi = acos(cos( phiInner - outerHit->Phi() )); 
-        if(fabs(deltaPhi) > M_PI) continue; 
-        if(fabs(deltaPhi) > phiWindow) continue; 
+        if( quickDeltaPhi(phiInner, outerHit->Phi()) > phiWindow) continue; 
 
         // calculate parameters of line from inner hit to outer hit 
         float zOuter = outerHit->Z;
@@ -59,27 +64,26 @@ bool TrackFitter::associateHitsSimple(hitContainer hc, float minZ, float maxZ){
 
         // reject if line does not point to within 3 sigma of the luminous region
         float beamlineIntersect = params.x_intercept() ;
-        if(fabs(beamlineIntersect) > maxZ) continue;
+        if(beamlineIntersect > maxZ || beamlineIntersect < minZ) continue;
 
         // intersection of the line with the intermediate layer
         float intersect = (582.0 - params.y_intercept())/params.gradient();
 
-        for(auto intermediateHit : hc[1]){
+        for(auto& intermediateHit : hc[1]){
           float zInter = intermediateHit->Z;
 
-          // only select if intermediate hit matches within tolerance 
+          // only select if intermediate hit matches within tolerance along Z  
           if(fabs( zInter - intersect) < tolerance){
 
             // reject the intermediate hit if it is also outside the phi window
-            if( acos(cos( phiInner - intermediateHit->Phi())) > phiWindow) continue; 
-
-            // have a further tolerance on the z position of the track in the intermediate layer
+            if( quickDeltaPhi(phiInner, intermediateHit->Phi()) > phiWindow) continue; 
 
             // Three hits are matched -> a track 
             std::vector<Hit*> matchedHits;
             matchedHits.push_back(innerHit);
             matchedHits.push_back(intermediateHit);
             matchedHits.push_back(outerHit);
+
             myTrack aTrack(matchedHits); 
             m_tracks.push_back(aTrack); 
           }
@@ -583,7 +587,10 @@ bool TrackFitter::combineHitsToTracksOutToIn(){
 }
 
 
-bool TrackFitter::AssociateHits(hitContainer hc){
+bool TrackFitter::AssociateHits(hitContainer& hc){
+
+  // Associate hits together such that tracks can be formed
+  // The hit association algorithm is determined 
   
   // Make sure these are empty, in case the function is called with a different algorithm 
   m_associatedHitCollection.clear();

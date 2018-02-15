@@ -42,7 +42,7 @@ class TrackFitter{
     // algorithms to associate hits 
     bool associateHitsLinearOutToIn(hitContainer, float, float);
     bool associateHitsLinearInToOut(hitContainer, float, float);
-    bool associateHitsSimple(hitContainer, float, float);
+    bool associateHitsSimple(hitContainer&, float, float);
 
     // functions to return tracks from hit collections
     bool combineHitsToTracksInToOut(); 
@@ -74,7 +74,7 @@ class TrackFitter{
     void debug(){ m_debug = true; }
 
     // public functions
-    bool AssociateHits(hitContainer hc);
+    bool AssociateHits(hitContainer& hc);
     std::vector <myTrack> GetTracks();
 
 };
