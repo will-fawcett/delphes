@@ -47,8 +47,6 @@ class myTrack{
 
   public:
 
-
-
     myTrack(){
       m_d0=0;
       m_z0=0;
@@ -62,7 +60,7 @@ class myTrack{
 
 
     // constructor 
-    myTrack(std::vector<Hit*> hits){
+    myTrack(std::vector<Hit*>& hits){
       m_associatedHits = hits;
       m_initialised = calculateTrackParameters(); // call default track parameter calculation
     }
@@ -95,7 +93,10 @@ class myTrack{
     float Phi() const {return m_phi;}
     float D0() const {return m_d0;}
     float Eta() const {return m_eta;} 
+
+    // access hit information 
     float GetHitPtAtLayer(int layerID) const {return m_associatedHits.at(layerID)->PT;}
+    Hit* GetHitAtLayer(int layerID) const {return m_associatedHits.at(layerID);}
 
     // test if track is a fake track 
     bool isFake() const;

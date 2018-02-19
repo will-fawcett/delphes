@@ -30,6 +30,7 @@ bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
     // Simplest possible algorithm 
     //////////////////////////////////////////
 
+
     float tolerance = 1.0; // [mm]
 
     // get the inner and outer barrel radii
@@ -37,6 +38,10 @@ bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
     int outerLayerID = m_layerIDs.back();
     float rInner = hc[innerLayerID].at(0)->Perp();
     float rOuter = hc[outerLayerID].at(0)->Perp(); 
+
+    // reserve some space for the tracks (performance)  
+    m_tracks.clear();
+    m_tracks.reserve( hc[outerLayerID].size() ); 
 
     // Calculate the phi window in which the hits in the outer layer must match
     float trackPtMin = 1.0; // [GeV] (minimum track pT to consider for phiWindow calculation)
@@ -80,12 +85,19 @@ bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
 
             // Three hits are matched -> a track 
             std::vector<Hit*> matchedHits;
+            matchedHits.reserve(4); // prevent vector from having to grow 
             matchedHits.push_back(innerHit);
             matchedHits.push_back(intermediateHit);
             matchedHits.push_back(outerHit);
 
-            myTrack aTrack(matchedHits); 
-            m_tracks.push_back(aTrack); 
+            /****************
+            std::cout << "Track creation" << std::endl;
+            std::cout << "PHI: Inner: " << innerHit->Phi() << "\tMiddle: " << intermediateHit->Phi() << "\touter: " << outerHit->Phi() << std::endl;
+            std::cout << "R:   Inner: " << innerHit->Perp() << "\tMiddle: " << intermediateHit->Perp() << "\touter: " << outerHit->Perp() << std::endl;
+            std::cout << "Layer:   Inner: " << innerHit->SurfaceID << "\tMiddle: " << intermediateHit->SurfaceID << "\touter: " << outerHit->SurfaceID << std::endl;
+            *****************/
+
+            m_tracks.push_back( myTrack(matchedHits) ); 
           }
         }
       }

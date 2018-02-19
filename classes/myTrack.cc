@@ -20,7 +20,6 @@ bool myTrack::calculateTrackParameters( cartesianCoordinate coord, trackParamAlg
   }
 
   return true; 
-
 }
 
 
@@ -120,12 +119,11 @@ bool myTrack::trackParametersBeamlineConstraint(){
   Hit * hit3 = m_associatedHits.at(2);
 
   // Check hits are properly orderd radially. Shouldn't really happen
-  if(hit1->Perp() > hit2->Perp()){
+  if(hit1->Perp() > hit2->Perp() || hit2->Perp() > hit3->Perp()){
     std::cerr << "ERROR: hits not in the correct order!" << std::endl;
-    return false;
-  }
-  if(hit2->Perp() > hit3->Perp()){
-    std::cerr << "ERROR: hits not in the correct order!" << std::endl;
+    std::cerr << "hit1: " << hit1->Perp() << "\t (" << hit1->X << ", " << hit1->Y << ", " << hit1->Z << ")" << std::endl;
+    std::cerr << "hit2: " << hit2->Perp() << "\t (" << hit2->X << ", " << hit2->Y << ", " << hit2->Z << ")" << std::endl;
+    std::cerr << "hit3: " << hit3->Perp() << "\t (" << hit3->X << ", " << hit3->Y << ", " << hit3->Z << ")" << std::endl;
     return false;
   }
 

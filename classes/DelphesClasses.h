@@ -503,6 +503,19 @@ public:
 
 class Hit : public SortableObject
 {
+  /****************
+   * Failed attempt at caching
+  private: 
+  bool m_phi_cache{false};
+  float m_phi;
+
+  bool m_perp_cache{false};
+  float m_perp; 
+
+  bool m_position_cache{false}; 
+  TLorentzVector m_position;
+  *****************/
+
 public:
 
   // coordinates of hit 
@@ -524,9 +537,9 @@ public:
   static CompBase *fgCompare; //!
   const CompBase *GetCompare() const { return fgCompare; }
 
-  TLorentzVector Position() const;
-  float Perp() const;
-  float Phi() const;
+  TLorentzVector Position();
+  float Perp();
+  float Phi();
 
   ClassDef(Hit, 1)
 };

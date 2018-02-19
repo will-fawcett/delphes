@@ -194,16 +194,22 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
     // Were only interested in charged particles, since we're looking for hits 
     if(TMath::Abs(charge) < 1.0E-9) continue; 
 
-    px = candidateMomentum.Px();
-    py = candidateMomentum.Py();
-    pz = candidateMomentum.Pz();
-    pt = candidateMomentum.Pt();
     pt2 = candidateMomentum.Perp2();
-    e = candidateMomentum.E();
+    pt = candidateMomentum.Pt();
 
     if(pt2 < 1.0E-9){
       continue;
     }
+
+    // WJF: pT < 0.3 GeV wont reach innermost layer of tracker
+    // Cut on 0.2 to be conservative
+    // Most particles will have very low pT, so this should speed things up 
+    if(pt < 0.2) continue;  
+
+    px = candidateMomentum.Px();
+    py = candidateMomentum.Py();
+    pz = candidateMomentum.Pz();
+    e = candidateMomentum.E();
 
     if(TMath::Abs(charge) < 1.0E-9 || TMath::Abs(fBz) < 1.0E-9)
     {
