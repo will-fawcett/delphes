@@ -118,7 +118,7 @@ TLorentzVector Tower::P4() const
 
 //------------------------------------------------------------------------------
 
-TLorentzVector Hit::Position()
+TLorentzVector Hit::Position() const
 {
   TLorentzVector  vec;
   vec.SetXYZT(X, Y, Z, T);
@@ -127,7 +127,7 @@ TLorentzVector Hit::Position()
 
 //------------------------------------------------------------------------------
 
-float Hit::Perp() 
+float Hit::Perp() const
 {
   /*********
    * Attempt at cacheing 
@@ -141,7 +141,7 @@ float Hit::Perp()
 
 //------------------------------------------------------------------------------
 
-float Hit::Phi() 
+float Hit::Phi() const 
 {
   /******************
    * Attempt at caching

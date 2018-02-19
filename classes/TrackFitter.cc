@@ -52,12 +52,12 @@ bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
 
     // Draw a line between the hit in the innermost and outermost layer
     // See if there is a hit on the line in the intermediate layer (within some tolerance)
-    for(auto& innerHit : hc[innerLayerID]){
+    for(const auto& innerHit : hc[innerLayerID]){
 
       float zInner = innerHit->Z;
       float phiInner = innerHit->Phi();
 
-      for(auto& outerHit : hc[outerLayerID]){
+      for(const auto& outerHit : hc[outerLayerID]){
 
         // must be within phi criteria  
         if( quickDeltaPhi(phiInner, outerHit->Phi()) > phiWindow) continue; 
@@ -74,7 +74,7 @@ bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
         // intersection of the line with the intermediate layer
         float intersect = (582.0 - params.y_intercept())/params.gradient();
 
-        for(auto& intermediateHit : hc[1]){
+        for(const auto& intermediateHit : hc[1]){
           float zInter = intermediateHit->Z;
 
           // only select if intermediate hit matches within tolerance along Z  
