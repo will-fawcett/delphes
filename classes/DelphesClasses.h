@@ -504,11 +504,11 @@ public:
 class Hit : public SortableObject
 {
 private: 
-  mutable bool m_phi_cache{false};
-  mutable float m_phi;
+  /*mutable bool m_phi_cache{false};*/
+  /*mutable float m_phi;*/
 
-  mutable bool m_perp_cache{false};
-  mutable float m_perp; 
+  /*mutable bool m_perp_cache{false};*/
+  /*mutable float m_perp; */
 
   /*bool m_position_cache{false}; */
   /*TLorentzVector m_position;*/
