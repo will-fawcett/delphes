@@ -121,9 +121,9 @@ bool myTrack::trackParametersBeamlineConstraint(){
   // Check hits are properly orderd radially. Shouldn't really happen
   if(hit1->Perp() > hit2->Perp() || hit2->Perp() > hit3->Perp()){
     std::cerr << "ERROR: hits not in the correct order!" << std::endl;
-    std::cerr << "hit1: " << hit1->Perp() << "\t (" << hit1->X << ", " << hit1->Y << ", " << hit1->Z << ")" << std::endl;
-    std::cerr << "hit2: " << hit2->Perp() << "\t (" << hit2->X << ", " << hit2->Y << ", " << hit2->Z << ")" << std::endl;
-    std::cerr << "hit3: " << hit3->Perp() << "\t (" << hit3->X << ", " << hit3->Y << ", " << hit3->Z << ")" << std::endl;
+    std::cerr << "hit1: " << hit1->Perp() << "\t (" << hit1->X << ", " << hit1->Y << ", " << hit1->Z << ")" << " check: " << sqrt(hit1->X*hit1->X+hit1->Y*hit1->Y) << std::endl;
+    std::cerr << "hit2: " << hit2->Perp() << "\t (" << hit2->X << ", " << hit2->Y << ", " << hit2->Z << ")" << " check: " << sqrt(hit2->X*hit2->X+hit2->Y*hit2->Y) << std::endl;
+    std::cerr << "hit3: " << hit3->Perp() << "\t (" << hit3->X << ", " << hit3->Y << ", " << hit3->Z << ")" << " check: " << sqrt(hit3->X*hit3->X+hit3->Y*hit3->Y) << std::endl;
     return false;
   }
 
@@ -194,11 +194,13 @@ bool myTrack::trackParametersBeamlineConstraint(){
 }
 
 
-bool myTrack::isFake() const{
-  return (!this->isNotFake()); 
+bool myTrack::isNotFake() const{
+  //return (!this->isNotFake()); 
+  return (!this->isFake()); 
 }
 
-bool myTrack::isNotFake() const{
+//bool myTrack::isNotFake() const{
+bool myTrack::isFake() const{
 
   // If all of the hits associated to this track have the same particle ID, the the track is not a fake track
   //
@@ -210,10 +212,9 @@ bool myTrack::isNotFake() const{
   std::vector<int> uniqueIDs;
   std::vector<int> ptIDs;
   for(Hit* hit : m_associatedHits){
+    ptIDs.push_back(hit->intPtKeVID);
     if(hit->IsPU){
       puFlag=true;
-      int intPtKeVID = hit->intPtKeVID; 
-      ptIDs.push_back(intPtKeVID);
     }
     else{
       // only fill if the UID exists (i.e. is not a PU particle) 
@@ -225,14 +226,40 @@ bool myTrack::isNotFake() const{
   if(puFlag){
     // check if the pT IDs are the same
     for(int i=0; i<ptIDs.size()-1; ++i){
-      if(ptIDs.at(i) != ptIDs.at(i+1)) return false;
+      if(ptIDs.at(i) != ptIDs.at(i+1)) return true; // is fake if any of these are different
     }
   }
   else{
     // check if the unique IDs are the same
     for(int i=0; i<uniqueIDs.size()-1; ++i){
-      if(uniqueIDs.at(i) != uniqueIDs.at(i+1) ) return false;
+      if(uniqueIDs.at(i) != uniqueIDs.at(i+1) ) return true; // is fake if any of these are different
     }
   }
-  return true;
+  return false;
+}
+
+void myTrack::printTrackParameters() const {
+   std::cout << "d0: " << m_d0 << std::endl;
+   std::cout << "z0: " << m_z0 << std::endl;
+   std::cout << "phi: " << m_phi << std::endl;
+   std::cout << "theta: " << m_theta << std::endl;
+   std::cout << "eta: " << m_eta << std::endl;
+   std::cout << "pT: " << m_pT << std::endl;
+}
+
+void myTrack::printHitInfo() const {
+  std::cout << "Track has " << m_associatedHits.size() << " hits." << std::endl; 
+  std::cout << "isFake: " << this->isFake() << std::endl;
+  this->printTrackParameters();
+  for(const auto& hit : m_associatedHits){
+    std::cout << "\t(" << hit->X << ", " << hit->Y << ", " << hit->Z << ") " 
+      << "\tID: " << hit->SurfaceID << " r=" << hit->Perp() << " phi=" << hit->Phi()
+      << "\tpu: " << hit->IsPU 
+      << " pt: " << hit->PT
+      << " ID: " << hit->intPtKeVID
+      << std::endl; 
+
+  }
+
+
 }

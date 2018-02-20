@@ -101,6 +101,10 @@ class myTrack{
     // test if track is a fake track 
     bool isFake() const;
     bool isNotFake() const;
+    
+    // 
+    void printHitInfo() const; 
+    void printTrackParameters() const;
 
 };
 

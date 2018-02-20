@@ -118,7 +118,7 @@ TLorentzVector Tower::P4() const
 
 //------------------------------------------------------------------------------
 
-TLorentzVector Hit::Position() const
+const TLorentzVector& Hit::Position() const
 {
   TLorentzVector  vec;
   vec.SetXYZT(X, Y, Z, T);
@@ -129,29 +129,26 @@ TLorentzVector Hit::Position() const
 
 float Hit::Perp() const
 {
-  /*********
-   * Attempt at cacheing 
+  // Attempt at cacheing 
   if(!m_perp_cache){
     m_perp = sqrt(X*X + Y*Y);  
     m_perp_cache = true;
   }
-  ********/
-  return sqrt(X*X + Y*Y); 
+  //return sqrt(X*X + Y*Y); 
+  return m_perp; 
 }
 
 //------------------------------------------------------------------------------
 
 float Hit::Phi() const 
 {
-  /******************
-   * Attempt at caching
+  // Attempt at caching
   if(!m_phi_cache){
-    m_phi = this->Position().Phi(); // Return phi coordinate from [-pi, pi]
+    m_phi = X == 0.0 && Y == 0.0 ? 0.0 : TMath::ATan2(Y,X); // Return phi coordinate from [-pi, pi]
     m_phi_cache = true;
   }
   return m_phi; 
-  ****************/
-  return X == 0.0 && Y == 0.0 ? 0.0 : TMath::ATan2(Y,X); // copy of TVector3 
+  //return X == 0.0 && Y == 0.0 ? 0.0 : TMath::ATan2(Y,X); // copy of TVector3 
 }
 
 //------------------------------------------------------------------------------

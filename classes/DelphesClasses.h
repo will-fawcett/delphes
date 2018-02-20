@@ -503,18 +503,15 @@ public:
 
 class Hit : public SortableObject
 {
-  /****************
-   * Failed attempt at caching
-  private: 
-  bool m_phi_cache{false};
-  float m_phi;
+private: 
+  mutable bool m_phi_cache{false};
+  mutable float m_phi;
 
-  bool m_perp_cache{false};
-  float m_perp; 
+  mutable bool m_perp_cache{false};
+  mutable float m_perp; 
 
-  bool m_position_cache{false}; 
-  TLorentzVector m_position;
-  *****************/
+  /*bool m_position_cache{false}; */
+  /*TLorentzVector m_position;*/
 
 public:
 
@@ -537,7 +534,7 @@ public:
   static CompBase *fgCompare; //!
   const CompBase *GetCompare() const { return fgCompare; }
 
-  TLorentzVector Position() const;
+  const TLorentzVector& Position() const;
   float Perp() const;
   float Phi() const;
 
