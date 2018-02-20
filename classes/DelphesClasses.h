@@ -503,15 +503,6 @@ public:
 
 class Hit : public SortableObject
 {
-private: 
-  /*mutable bool m_phi_cache{false};*/
-  /*mutable float m_phi;*/
-
-  /*mutable bool m_perp_cache{false};*/
-  /*mutable float m_perp; */
-
-  /*bool m_position_cache{false}; */
-  /*TLorentzVector m_position;*/
 
 public:
 
@@ -520,6 +511,11 @@ public:
   Float_t Y;
   Float_t Z; 
   Float_t T;  
+
+  // Derived from above coordinates
+  Float_t Eta; 
+  Float_t Phi; 
+  Float_t HitRadius; 
 
   UInt_t SurfaceID; // an ID number corresponding to the surface on which the hit was generated 
 
@@ -535,8 +531,9 @@ public:
   const CompBase *GetCompare() const { return fgCompare; }
 
   const TLorentzVector& Position() const;
-  float Perp() const;
-  float Phi() const;
+  float CalculatePerp() const;
+  float CalculatePhi() const;
+  float CalculateEta() const; 
 
   ClassDef(Hit, 1)
 };
@@ -632,6 +629,7 @@ public:
 
   // Hit parameters
   UInt_t SurfaceID;
+  Float_t HitRadius;
 
   // tracking resolution
 

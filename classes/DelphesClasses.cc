@@ -127,7 +127,7 @@ const TLorentzVector& Hit::Position() const
 
 //------------------------------------------------------------------------------
 
-float Hit::Perp() const
+float Hit::CalculatePerp() const
 {
   /***************
   // Attempt at cacheing 
@@ -142,7 +142,7 @@ float Hit::Perp() const
 
 //------------------------------------------------------------------------------
 
-float Hit::Phi() const 
+float Hit::CalculatePhi() const 
 {
   /**********
   // Attempt at caching
@@ -153,6 +153,11 @@ float Hit::Phi() const
   return m_phi; 
   *******/
   return X == 0.0 && Y == 0.0 ? 0.0 : TMath::ATan2(Y,X); // copy of TVector3 
+}
+
+float Hit::CalculateEta() const
+{
+  return this->Position().Eta(); 
 }
 
 //------------------------------------------------------------------------------

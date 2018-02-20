@@ -35,11 +35,11 @@ bool myTrack::trackParametersNoBeamlineConstraint(){
   Hit * hit2 = m_associatedHits.at(1);
   Hit * hit3 = m_associatedHits.at(2);
   // Check hits are properly orderd radially. Shouldn't really happen
-  if(hit1->Perp() > hit2->Perp()){
+  if(hit1->HitRadius > hit2->HitRadius){
     std::cerr << "ERROR: hits not in the correct order!" << std::endl;
     return false;
   }
-  if(hit2->Perp() > hit3->Perp()){
+  if(hit2->HitRadius > hit3->HitRadius){
     std::cerr << "ERROR: hits not in the correct order!" << std::endl;
     return false;
   }
@@ -59,9 +59,9 @@ bool myTrack::trackParametersNoBeamlineConstraint(){
   float y3 = hit3->Y; 
   float z3 = hit3->Z; 
 
-  float r1 = hit1->Perp();
-  float r2 = hit2->Perp();
-  float r3 = hit3->Perp();
+  float r1 = hit1->HitRadius;
+  float r2 = hit2->HitRadius;
+  float r3 = hit3->HitRadius;
 
   // circle described by (x-a)^2 + (y-b)^2 = r^2 
   float b = ( (x3 - x1)*(r2*r2 - r1*r1) - (x2 - x1)*(r3*r3 - r1*r1) ) / ( 2*( (y2-y1)*(x3-x1) - (y3-y1)*(x2-x1)  ) );
@@ -119,11 +119,11 @@ bool myTrack::trackParametersBeamlineConstraint(){
   Hit * hit3 = m_associatedHits.at(2);
 
   // Check hits are properly orderd radially. Shouldn't really happen
-  if(hit1->Perp() > hit2->Perp() || hit2->Perp() > hit3->Perp()){
+  if(hit1->HitRadius > hit2->HitRadius || hit2->HitRadius > hit3->HitRadius){
     std::cerr << "ERROR: hits not in the correct order!" << std::endl;
-    std::cerr << "hit1: " << hit1->Perp() << "\t (" << hit1->X << ", " << hit1->Y << ", " << hit1->Z << ")" << " check: " << sqrt(hit1->X*hit1->X+hit1->Y*hit1->Y) << std::endl;
-    std::cerr << "hit2: " << hit2->Perp() << "\t (" << hit2->X << ", " << hit2->Y << ", " << hit2->Z << ")" << " check: " << sqrt(hit2->X*hit2->X+hit2->Y*hit2->Y) << std::endl;
-    std::cerr << "hit3: " << hit3->Perp() << "\t (" << hit3->X << ", " << hit3->Y << ", " << hit3->Z << ")" << " check: " << sqrt(hit3->X*hit3->X+hit3->Y*hit3->Y) << std::endl;
+    std::cerr << "hit1: " << hit1->HitRadius << "\t (" << hit1->X << ", " << hit1->Y << ", " << hit1->Z << ")" << " check: " << sqrt(hit1->X*hit1->X+hit1->Y*hit1->Y) << std::endl;
+    std::cerr << "hit2: " << hit2->HitRadius << "\t (" << hit2->X << ", " << hit2->Y << ", " << hit2->Z << ")" << " check: " << sqrt(hit2->X*hit2->X+hit2->Y*hit2->Y) << std::endl;
+    std::cerr << "hit3: " << hit3->HitRadius << "\t (" << hit3->X << ", " << hit3->Y << ", " << hit3->Z << ")" << " check: " << sqrt(hit3->X*hit3->X+hit3->Y*hit3->Y) << std::endl;
     return false;
   }
 
@@ -253,7 +253,7 @@ void myTrack::printHitInfo() const {
   this->printTrackParameters();
   for(const auto& hit : m_associatedHits){
     std::cout << "\t(" << hit->X << ", " << hit->Y << ", " << hit->Z << ") " 
-      << "\tID: " << hit->SurfaceID << " r=" << hit->Perp() << " phi=" << hit->Phi()
+      << "\tID: " << hit->SurfaceID << " r=" << hit->HitRadius << " phi=" << hit->Phi << " eta=" << hit->Eta
       << "\tpu: " << hit->IsPU 
       << " pt: " << hit->PT
       << " ID: " << hit->intPtKeVID

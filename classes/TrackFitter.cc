@@ -5,6 +5,7 @@
 #include "TMath.h"
 #include "TGraphErrors.h"
 
+
 #include <ctime>
 
 
@@ -24,28 +25,82 @@ inline float quotient(float r, float r2, float param1, float param2){
   return pow(r2,4)*param1*param1 - r*r * r2*r2 *(r2*r2 - 4*param2*param2);
 }
 
+// print out map 
+void printNewHitMap(std::map<std::string, std::vector<Hit*>> theMap){
+  for(const auto& thep : theMap){
+    std::cout << "ID: " << thep.first << "\t" << thep.second.size() << std::endl;
+  }
+}
+
+std::map<std::string, std::vector<Hit*> > TrackFitter::associateHitsSimplePattern(hitContainer& hc, Location loc) const{
+  // assign eta-phi regions, only match hits with hits in the right eta-phi window 
+
+  // Some pre-defined knowledge about the tracker
+  const float barrelLength = 2250; // [mm] 
+
+  std::map<std::string, std::vector<Hit*> > newMap; 
+
+  for(const auto layer : m_layerIDs){
+    for(Hit* hit : hc[layer]){
+      std::string locationString = loc.locationFromHit(hit);
+      newMap[ locationString ].push_back(hit); 
+    }
+  }
+
+  return newMap;
+}
+
+std::vector<Hit*> concatenateVector(std::vector<Hit*>& A, std::vector<Hit*>& B){
+  // https://stackoverflow.com/questions/3177241/what-is-the-best-way-to-concatenate-two-vectors
+  std::vector<Hit*> AB;
+  AB.reserve( A.size() + B.size() ); // preallocate memory
+  AB.insert( AB.end(), A.begin(), A.end() );
+  AB.insert( AB.end(), B.begin(), B.end() );
+  return AB;
+}
+
+std::vector<Hit*> concatenateHitsBasedOnLocations(std::map<std::string, std::vector<Hit*>>& hitMap, std::vector<std::string> locations){
+  // Return a vector of all hits in all of the regions selected by locations 
+  // Can probably make this more efficient ? 
+  std::vector<Hit*> newVec;
+  for(const auto& location : locations){
+    newVec = concatenateVector(newVec, hitMap[location]);
+  }
+  return newVec; 
+}
+
+
 bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
+
+    // create a Location object (really just a function ... ) 
+    Location loc(0.06, 0.1);
+
+    // mapping of hits to eta-phi locations 
+    std::map<std::string, std::vector<Hit*>> hitMap = this->associateHitsSimplePattern(hc, loc); 
 
     //////////////////////////////////////////
     // Simplest possible algorithm 
     //////////////////////////////////////////
 
 
-    float tolerance = 1.0; // [mm]
+    const float tolerance = 1.0; // [mm]
+    //float tolerance = 0.1; // [mm]
 
     // get the inner and outer barrel radii
-    int innerLayerID = m_layerIDs.at(0);
-    int outerLayerID = m_layerIDs.back();
-    float rInner = hc[innerLayerID].at(0)->Perp();
-    float rOuter = hc[outerLayerID].at(0)->Perp(); 
+    const int innerLayerID = m_layerIDs.at(0);
+    const int outerLayerID = m_layerIDs.back();
+    const int middleLayerID = 1; 
+    const float rInner = hc[innerLayerID].at(0)->HitRadius;
+    const float rOuter = hc[outerLayerID].at(0)->HitRadius; 
 
     // reserve some space for the tracks (performance)  
     m_tracks.clear();
     m_tracks.reserve( hc[outerLayerID].size() ); 
 
     // Calculate the phi window in which the hits in the outer layer must match
-    float trackPtMin = 1.0; // [GeV] (minimum track pT to consider for phiWindow calculation)
-    float bendingRadius = 1000 * trackPtMin/1.199; // [mm]
+    //float trackPtMin = 1.0; // [GeV] (minimum track pT to consider for phiWindow calculation)
+    const float trackPtMin = 2.0; // [GeV] (minimum track pT to consider for phiWindow calculation)
+    const float bendingRadius = 1000 * trackPtMin/1.199; // [mm]
     float phiWindow = fabs( acos(rInner / (2*bendingRadius)) - acos(rOuter / (2*bendingRadius)) );
     phiWindow *= 2; // multiply by two, to have the deviation travelling in either direction. 
 
@@ -54,34 +109,46 @@ bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
     // See if there is a hit on the line in the intermediate layer (within some tolerance)
     for(const auto& innerHit : hc[innerLayerID]){
 
-      float zInner = innerHit->Z;
-      float phiInner = innerHit->Phi();
+      const float zInner = innerHit->Z;
+      const float phiInner = innerHit->Phi;
 
-      for(const auto& outerHit : hc[outerLayerID]){
+      // get locations (areas) for other hits
+      std::string innerHitLocation = loc.locationFromHit(innerHit); 
+      std::vector<std::string> outerHitLocations  = loc.listOfLocationsInLayer(innerHitLocation, outerLayerID );
+      std::vector<std::string> middleHitLocations = loc.listOfLocationsInLayer(innerHitLocation, middleLayerID);
+      for(auto l : outerHitLocations) std::cout << l << std::endl;
+
+      // get vector of hits defined by list of locations
+      std::vector<Hit*> outerHitVector  = concatenateHitsBasedOnLocations(hitMap, outerHitLocations);
+      std::vector<Hit*> middleHitVector = concatenateHitsBasedOnLocations(hitMap, middleHitLocations);
+
+      //for(const auto& outerHit : hc[outerLayerID]){
+      for(const auto& outerHit : outerHitVector){
 
         // must be within phi criteria  
-        if( quickDeltaPhi(phiInner, outerHit->Phi()) > phiWindow) continue; 
+        if( quickDeltaPhi(phiInner, outerHit->Phi) > phiWindow) continue; 
 
         // calculate parameters of line from inner hit to outer hit 
-        float zOuter = outerHit->Z;
+        const float zOuter = outerHit->Z;
         LineParameters params;
         params.calculateLineParameters(zInner, rInner, zOuter, rOuter);
 
         // reject if line does not point to within 3 sigma of the luminous region
-        float beamlineIntersect = params.x_intercept() ;
+        const float beamlineIntersect = params.x_intercept() ;
         if(beamlineIntersect > maxZ || beamlineIntersect < minZ) continue;
 
         // intersection of the line with the intermediate layer
-        float intersect = (582.0 - params.y_intercept())/params.gradient();
+        const float intersect = (582.0 - params.y_intercept())/params.gradient();
 
-        for(const auto& intermediateHit : hc[1]){
-          float zInter = intermediateHit->Z;
+        //for(const auto& intermediateHit : hc[middleLayerID]){
+        for(const auto& intermediateHit : middleHitVector){
+          const float zInter = intermediateHit->Z;
 
           // only select if intermediate hit matches within tolerance along Z  
           if(fabs( zInter - intersect) < tolerance){
 
             // reject the intermediate hit if it is also outside the phi window
-            if( quickDeltaPhi(phiInner, intermediateHit->Phi()) > phiWindow) continue; 
+            if( quickDeltaPhi(phiInner, intermediateHit->Phi) > phiWindow) continue; 
 
             // Three hits are matched -> a track 
             std::vector<Hit*> matchedHits;
@@ -92,8 +159,8 @@ bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
 
             /****************
             std::cout << "Track creation" << std::endl;
-            std::cout << "PHI: Inner: " << innerHit->Phi() << "\tMiddle: " << intermediateHit->Phi() << "\touter: " << outerHit->Phi() << std::endl;
-            std::cout << "R:   Inner: " << innerHit->Perp() << "\tMiddle: " << intermediateHit->Perp() << "\touter: " << outerHit->Perp() << std::endl;
+            std::cout << "PHI: Inner: " << innerHit->Phi << "\tMiddle: " << intermediateHit->Phi << "\touter: " << outerHit->Phi << std::endl;
+            std::cout << "R:   Inner: " << innerHit->HitRadius << "\tMiddle: " << intermediateHit->HitRadius << "\touter: " << outerHit->HitRadius << std::endl;
             std::cout << "Layer:   Inner: " << innerHit->SurfaceID << "\tMiddle: " << intermediateHit->SurfaceID << "\touter: " << outerHit->SurfaceID << std::endl;
             *****************/
 
@@ -257,13 +324,13 @@ bool TrackFitter::associateHitsLinearOutToIn(hitContainer hitMap, float minZ, fl
       if(layerID == layers.at(0)) continue; 
 
       // get the r coordinate of the next-innermost layer
-      float rInner = hitMap[layerID-1].at(0)->Perp(); // should be able to optimize this away? 
+      float rInner = hitMap[layerID-1].at(0)->HitRadius; // should be able to optimize this away? 
 
       // loop over all hits in the inner layers
       for(Hit * innerHit : hitMap[layerID]){
 
         // find window for hits in the next layer to be assigned to this one
-        float r = hit->Perp();
+        float r = hit->HitRadius;
         float z = hit->Z;
         float zLeft  = calculateZWindowForNextLevel(r, z, rInner, minZ); 
         float zRight = calculateZWindowForNextLevel(r, z, rInner, maxZ); 
@@ -285,7 +352,7 @@ bool TrackFitter::associateHitsLinearOutToIn(hitContainer hitMap, float minZ, fl
     if(layerID == layers.back()) continue; // don't execute algorithm for innermost layer
 
     // get the r coordinate of the next-innermost layer
-    float rInner = hitMap[layerID-1].at(0)->Perp(); // should be able to optimize this away? 
+    float rInner = hitMap[layerID-1].at(0)->HitRadius; // should be able to optimize this away? 
 
     // loop over all hits in layer
     for(Hit* hit : hitMap[layerID]){
@@ -294,7 +361,7 @@ bool TrackFitter::associateHitsLinearOutToIn(hitContainer hitMap, float minZ, fl
       newHitMap[layerID].push_back( collection );
 
       // find window for hits in the next layer to be assigned to this one
-      float r = hit->Perp();
+      float r = hit->HitRadius;
       float z = hit->Z;
       float zLeft  = calculateZWindowForNextLevel(r, z, rInner, minZ); 
       float zRight = calculateZWindowForNextLevel(r, z, rInner, maxZ); 
@@ -327,7 +394,7 @@ bool TrackFitter::associateHitsLinearOutToIn(hitContainer hitMap, float minZ, fl
     if(layerID == m_layerIDs.back()) continue; // no more layers inside 
 
     // calculate r of next-lower level
-    float rInner = hitMap[layerID-1].at(0)->Perp(); 
+    float rInner = hitMap[layerID-1].at(0)->HitRadius; 
 
     // calculate search window in z
     float r = hit.Perp();
@@ -385,10 +452,10 @@ bool TrackFitter::associateHitsLinearInToOut(hitContainer hitMap, float minZ, fl
 
   // deltaPhi parameter for the search window. Only depends on the separation of the inner and outermost layers
   // radius of outermost barrel layer
-  float outermostRadius = hitMap[ m_layerIDs.back() ].at(0)->Perp();
+  float outermostRadius = hitMap[ m_layerIDs.back() ].at(0)->HitRadius;
   Hit* anInnerHit = hitMap[ 0 ].at(0);
   float maxPhiDeviation = calculateRPhiWindowInToOut(anInnerHit->X, anInnerHit->Y, outermostRadius); // may only be necessary once 
-  float innermostRadius = anInnerHit->Perp();
+  float innermostRadius = anInnerHit->HitRadius;
 
   // associate hit algorithm 
   // It's very important to loop over the references to the object
@@ -474,11 +541,11 @@ bool TrackFitter::combineHitsToTracksMatchingInnerAndOutermost(){
       for(Hit* outerHit : layerToHitMap[outerLayerID]){
 
         LineParameters trackLine;
-        trackLine.calculateLineParameters( innerHit->Z, innerHit->Perp(), outerHit->Z, outerHit->Perp() );
+        trackLine.calculateLineParameters( innerHit->Z, innerHit->HitRadius, outerHit->Z, outerHit->HitRadius );
 
         if(m_debug){
-          std::cout << "Inner hit (x, y, z): " << innerHit->X << ", " << innerHit->Y << ", " << innerHit->Z << " . r =" << innerHit->Perp() << std::endl;
-          std::cout << "outer hit (x, y, z): " << outerHit->X << ", " << outerHit->Y << ", " << outerHit->Z << " . r =" << outerHit->Perp() << std::endl;
+          std::cout << "Inner hit (x, y, z): " << innerHit->X << ", " << innerHit->Y << ", " << innerHit->Z << " . r =" << innerHit->HitRadius << std::endl;
+          std::cout << "outer hit (x, y, z): " << outerHit->X << ", " << outerHit->Y << ", " << outerHit->Z << " . r =" << outerHit->HitRadius << std::endl;
           std::cout << "Line parameters, grad: " << trackLine.gradient() << " \tintercept: " << trackLine.x_intercept() << std::endl;
         }
 
@@ -514,7 +581,7 @@ bool TrackFitter::combineHitsToTracksMatchingInnerAndOutermost(){
           if(layerToHitMap[layer].size() == 0) continue; // must have at least one loosely matched hit in the intermediate layers
 
           // radius of this intermediate layer
-          float radius = layerToHitMap[layer].at(0)->Perp(); 
+          float radius = layerToHitMap[layer].at(0)->HitRadius; 
 
           // z coordinate of intersection of line and this barrel layer
           float zCoordinate = (radius - trackLine.x_intercept()) / trackLine.gradient();

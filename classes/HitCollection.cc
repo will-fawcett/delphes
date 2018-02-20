@@ -140,7 +140,7 @@ void HitCollection::printMatchedHits() const{
 std::string HitCollection::hitInfo() const{
   std::ostringstream s;
   s << "position: (" << m_hit->X << ", " << m_hit->Y << ", " << m_hit->Z << ")"  // cartesian
-    << " (" << m_hit->Perp() << "," << m_hit->Phi() << ")" // (r, phi, z) cylindrical polars (z already printed, so not shown here)
+    << " (" << m_hit->HitRadius << "," << m_hit->Phi << ")" // (r, phi, z) cylindrical polars (z already printed, so not shown here)
     << "\t surface: " << m_hit->SurfaceID
     << "\t has " << this->countAssignedHits() << " hits."
     << " Particle pT=" << dynamic_cast<GenParticle*>(m_hit->Particle.GetObject())->PT << " GeV, "

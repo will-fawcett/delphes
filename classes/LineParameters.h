@@ -29,7 +29,7 @@ class LineParameters {
     // constructor 
     LineParameters(std::vector<Hit*> hits){
       for(Hit* hit : hits){
-        m_coordinates.push_back( std::make_pair(hit->Z, hit->Perp()) ); // coordinates in (r, z)
+        m_coordinates.push_back( std::make_pair(hit->Z, hit->HitRadius ) ); // coordinates in (z, r)
       }
     }
 

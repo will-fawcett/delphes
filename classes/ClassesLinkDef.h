@@ -31,9 +31,10 @@
 #include "classes/SortableObject.h"
 #include "classes/DelphesClasses.h"
 
-#include "classes/TrackFitter.h"
+#include "classes/Location.h"
 #include "classes/HitCollection.h"
 #include "classes/LineParameters.h"
+#include "classes/TrackFitter.h"
 
 #ifdef __CINT__
 
@@ -69,10 +70,10 @@
 
 #pragma link C++ class Candidate+;
 
+#pragma link C++ class Location+;
 #pragma link C++ class myTrack+;
 #pragma link C++ class TrackFitter+;
 #pragma link C++ class HitCollection+;
 #pragma link C++ class LineParameters+;
 
 #endif
-

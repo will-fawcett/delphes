@@ -142,6 +142,8 @@ void Merger::Process()
       sumPT += candidateMomentum.Pt();
       sumE += candidateMomentum.E();
 
+      /****************
+       * WJF remove this, potentially a bit dangerous :/ 
       // Normally just adds unaltered candidate to fOutputArray 
       // Modify this to set a maximum pT 
       // Could potentially have been added to Efficiency
@@ -149,6 +151,7 @@ void Merger::Process()
         std::cout << "Candidate has pT > " << fTrackPtMax << " pT = " << candidateMomentum.Pt() << std::endl;
         candidate->Momentum.SetPtEtaPhiM( fTrackPtMax, candidate->Momentum.Eta(), candidate->Momentum.Phi(), candidate->Momentum.M() );
       }
+      *******************/
 
       fOutputArray->Add(candidate);
     }

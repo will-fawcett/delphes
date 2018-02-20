@@ -5,6 +5,7 @@
 #include "classes/HitCollection.h"
 #include "classes/LineParameters.h"
 #include "classes/myTrack.h"
+#include "classes/Location.h"
 
 
 #include <vector>
@@ -43,6 +44,8 @@ class TrackFitter{
     bool associateHitsLinearOutToIn(hitContainer, float, float);
     bool associateHitsLinearInToOut(hitContainer, float, float);
     bool associateHitsSimple(hitContainer&, float, float);
+
+    std::map<std::string, std::vector<Hit*>>  associateHitsSimplePattern(hitContainer&, Location) const;
 
     // functions to return tracks from hit collections
     bool combineHitsToTracksInToOut(); 
