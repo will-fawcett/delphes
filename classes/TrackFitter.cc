@@ -769,3 +769,16 @@ bool TrackFitter::AssociateHits(hitContainer& hc){
 std::vector <myTrack> TrackFitter::GetTracks(){
   return m_tracks;
 }
+
+
+void TrackFitter::ApplyCurvatureCut(float cut){
+  // loop over all tracks, remove those with curvature difference deemed too large
+  std::vector< myTrack > newVec;
+  for(const myTrack& track: m_tracks){
+    if( fabs(track.kappa_bc() - track.kappa_nbc()) < cut){
+      newVec.push_back(track);
+    }
+  }
+  m_tracks = newVec; 
+
+}

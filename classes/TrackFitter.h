@@ -79,6 +79,7 @@ class TrackFitter{
     // public functions
     bool AssociateHits(hitContainer& hc);
     std::vector <myTrack> GetTracks();
+    void ApplyCurvatureCut(float);
 
 };
 #endif // TrackFitter_h
