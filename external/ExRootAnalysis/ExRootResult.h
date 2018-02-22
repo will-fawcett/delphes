@@ -5,6 +5,8 @@
 #include "Gtypes.h"
 #include "TMath.h"
 
+#include "TGraph.h"
+
 #include <set>
 #include <map>
 
@@ -60,6 +62,8 @@ public:
                  Int_t nybins, Axis_t ymin, Axis_t ymax,
                  Int_t nzbins, Axis_t zmin, Axis_t zmax,
                  Int_t logx=0, Int_t logy=0, Int_t logz=0);
+
+  TGraph *AddTGraph(std::string);
 
 
   THStack *AddHistStack(const char *name, const char *title);

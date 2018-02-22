@@ -334,6 +334,19 @@ TH1 *ExRootResult::AddHist1D(const std::string name, const std::string title,
 
 //------------------------------------------------------------------------------
 
+TGraph *ExRootResult::AddTGraph(std::string name){
+  TGraph* g = new TGraph();
+  g->SetName(name.c_str());
+
+  PlotSettings settings; 
+  fPlotMap[g] = settings;
+
+  if(fFolder) fFolder->Add(g); 
+  return g;
+}
+
+//------------------------------------------------------------------------------
+
 TH1 *ExRootResult::AddHist1D(const char *name, const char *title,
                              const char *xlabel, const char *ylabel,
                              Int_t nxbins, const Float_t *bins,

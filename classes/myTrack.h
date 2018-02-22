@@ -94,6 +94,9 @@ class myTrack{
     float Phi() const {return m_phi;}
     float D0() const {return m_d0;}
     float Eta() const {return m_eta;} 
+    float kappa_bc() const {return m_kappa_013;} // beamline constraint
+    float kappa_nbc() const {return m_kappa_123;} // no beamline constraint
+
 
     // access hit information 
     float GetHitPtAtLayer(int layerID) const {return m_associatedHits.at(layerID)->PT;}
