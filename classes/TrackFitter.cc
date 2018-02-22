@@ -33,19 +33,22 @@ void printNewHitMap(std::map<std::string, std::vector<Hit*>> theMap){
 }
 
 std::map<std::string, std::vector<Hit*> > TrackFitter::associateHitsSimplePattern(hitContainer& hc, Location loc) const{
-  // assign eta-phi regions, only match hits with hits in the right eta-phi window 
+
+  // Separate collection of hits into "layer-eta"phi" regions
 
   // Some pre-defined knowledge about the tracker
   const float barrelLength = 2250; // [mm] 
 
   std::map<std::string, std::vector<Hit*> > newMap; 
-
   for(const auto layer : m_layerIDs){
     for(Hit* hit : hc[layer]){
       std::string locationString = loc.locationFromHit(hit);
       newMap[ locationString ].push_back(hit); 
     }
   }
+
+  // debug 
+  //printNewHitMap(newMap); 
 
   return newMap;
 }
@@ -59,7 +62,7 @@ std::vector<Hit*> concatenateVector(std::vector<Hit*>& A, std::vector<Hit*>& B){
   return AB;
 }
 
-std::vector<Hit*> concatenateHitsBasedOnLocations(std::map<std::string, std::vector<Hit*>>& hitMap, std::vector<std::string> locations){
+std::vector<Hit*> concatenateHitsBasedOnLocations(std::map<std::string, std::vector<Hit*>>& hitMap, std::vector<std::string>& locations){
   // Return a vector of all hits in all of the regions selected by locations 
   // Can probably make this more efficient ? 
   std::vector<Hit*> newVec;
@@ -116,7 +119,8 @@ bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
       std::string innerHitLocation = loc.locationFromHit(innerHit); 
       std::vector<std::string> outerHitLocations  = loc.listOfLocationsInLayer(innerHitLocation, outerLayerID );
       std::vector<std::string> middleHitLocations = loc.listOfLocationsInLayer(innerHitLocation, middleLayerID);
-      for(auto l : outerHitLocations) std::cout << l << std::endl;
+      //std::cout << "There are " << outerHitLocations.size() << " outer hit locations: " << std::endl;
+      //for(auto l : outerHitLocations) std::cout << "\t " <<  l << std::endl;
 
       // get vector of hits defined by list of locations
       std::vector<Hit*> outerHitVector  = concatenateHitsBasedOnLocations(hitMap, outerHitLocations);

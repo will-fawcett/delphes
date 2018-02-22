@@ -12,8 +12,7 @@ struct cartesianCoordinate {
 
 // enumeration for different track parameter algorithms 
 enum trackParamAlgo{
-  beamlineConstraint,
-  noBeamlineConstraint,
+  triplet,
   MAXIMUM
 };
 
@@ -39,11 +38,13 @@ class myTrack{
     /*float m_qOverP;*/
     float m_pT;
 
+    float m_kappa_013;
+    float m_kappa_123; 
+
     bool m_initialised;
 
     // functions to calculate track parameters 
-    bool trackParametersBeamlineConstraint();
-    bool trackParametersNoBeamlineConstraint();
+    bool trackParametersTriplet();
 
   public:
 
@@ -71,7 +72,7 @@ class myTrack{
       coordinate.x = 0.0;
       coordinate.y = 0.0;
       coordinate.z = 0.0;
-      m_initialised = calculateTrackParameters(coordinate, beamlineConstraint); // note the default algorithm is beamlineConstraint (!)
+      m_initialised = calculateTrackParameters(coordinate, triplet); 
     }
 
     // Calculate track parameters relative to the detector origin, using a specified algorithm

@@ -8,11 +8,8 @@ bool myTrack::calculateTrackParameters( cartesianCoordinate coord, trackParamAlg
   // TODO: add calculation if with respect to NOT (0, 0, 0)
   
   switch (algorithm) {
-    case beamlineConstraint:{
-      return this->trackParametersBeamlineConstraint();
-    }
-    case noBeamlineConstraint:{
-      return this->trackParametersNoBeamlineConstraint();
+    case triplet:{
+      return this->trackParametersTriplet();
     }
     case MAXIMUM:{
       return false;
@@ -23,89 +20,18 @@ bool myTrack::calculateTrackParameters( cartesianCoordinate coord, trackParamAlg
 }
 
 
-bool myTrack::trackParametersNoBeamlineConstraint(){
-  // calculates the track parameters only using the three points in the triplet
 
 
-  if(m_associatedHits.size() != 3){
-    std::cerr << "ERROR: more than three hits associate to this track. Algorith is not compatible." << std::endl;
-    return false;
-  }
-  Hit * hit1 = m_associatedHits.at(0);
-  Hit * hit2 = m_associatedHits.at(1);
-  Hit * hit3 = m_associatedHits.at(2);
-  // Check hits are properly orderd radially. Shouldn't really happen
-  if(hit1->HitRadius > hit2->HitRadius){
-    std::cerr << "ERROR: hits not in the correct order!" << std::endl;
-    return false;
-  }
-  if(hit2->HitRadius > hit3->HitRadius){
-    std::cerr << "ERROR: hits not in the correct order!" << std::endl;
-    return false;
-  }
-  
-  // calculate the center of the circle described by the points (xi, yi) for i = 1, 2, 3
+bool myTrack::trackParametersTriplet(){
 
-  // copy of hit coordinates
-  float x1 = hit1->X;
-  float y1 = hit1->Y; 
-  float z1 = hit1->Z; 
+  /****************
+   * First calculate the track parameters assuming a beamline constraint (and using the first and third hit)
+   * Then calculate the track parameters using only the three hits
+   * Good tracks will have consistent parameters
+   * **************/
 
-  float x2 = hit2->X;
-  float y2 = hit2->Y; 
-  float z2 = hit2->Z; 
-
-  float x3 = hit3->X;
-  float y3 = hit3->Y; 
-  float z3 = hit3->Z; 
-
-  float r1 = hit1->HitRadius;
-  float r2 = hit2->HitRadius;
-  float r3 = hit3->HitRadius;
-
-  // circle described by (x-a)^2 + (y-b)^2 = r^2 
-  float b = ( (x3 - x1)*(r2*r2 - r1*r1) - (x2 - x1)*(r3*r3 - r1*r1) ) / ( 2*( (y2-y1)*(x3-x1) - (y3-y1)*(x2-x1)  ) );
-
-  float a = ( r2*r2 - r1*r1 - 2*b*(y2 - y1) ) / ( 2*(x2 - x1));
-
-  float radius = hypotf( (x1-a), (y1-b) );
-
-
-  // transverse momentum
-  m_pT = 1.199 * fabs(radius/1000); // for a 4T magnetic field and radius in [m], divide by 1000 as length units in [mm]
-
-  // don't know yet how to calculate d0 (and phi) 
-  m_phi = 0;
-  m_d0 = 0;
-  
-  // longitudinal parameters calculated from least-squares fit of the three hit points
-  LineParameters params(m_associatedHits);
-  params.simpleLinearLeastSquaresFit(); 
-  m_z0 = params.x_intercept(); 
-
-  m_theta = 0; // careful how this is calculated, may only want this to be defined from [0; pi] 
-  m_eta = -1*log( tan( m_theta/2.0 ));
-
-  /************************
-  // print out some info
-  std::cout << "trackParametersNoBeamlineConstraint()" << std::endl;
-  std::cout << "(xi, yi) : "
-    << x1 << ", " << y1 << "\t"
-    << x2 << ", " << y2 << "\t"
-    << x3 << ", " << y3 << "\t"
-    << std::endl;
-  std::cout << "(a, b) and radius : " << a << ", " << b << "\t" << radius << std::endl;
-  std::cout << "isFake: " << this->isFake() << std::endl;
-  std::cout << "track pT: " << m_pT << std::endl;
-  std::cout << "hit 1 pT: " << hit1->PT << " \t2: " << hit2->PT << "\t3: " << hit3->PT << std::endl;
-  ************************/
-
-}
-
-
-
-bool myTrack::trackParametersBeamlineConstraint(){
-
+  ///////////////////////////////
+  // Calculate track parameters with beamline constraint 
   // Assumes the track originates from (0, 0, z0)
   // Calculates the track parameters using the origin and two other points, corresponding to the innermost and outermost hit
   
@@ -132,15 +58,21 @@ bool myTrack::trackParametersBeamlineConstraint(){
   float y1 = hit1->Y; 
   float z1 = hit1->Z; 
 
+  float x2 = hit2->X;
+  float y2 = hit2->Y; 
+  float z2 = hit2->Z; 
+
   float x3 = hit3->X;
   float y3 = hit3->Y; 
   float z3 = hit3->Z; 
 
+  float r01 = hit1->HitRadius; // = sqrt(x^2 + y^2) 
+  float r02 = hit2->HitRadius;
+  float r03 = hit3->HitRadius; 
+
   // Calculate the parameters in the longitudinal plane
   // Follows calculations by A. Schoning
 
-  float r01 = hypotf(x1, y1);
-  float r03 = hypotf(x3, y3); 
   float r13 = hypotf( fabs(x3-x1) , fabs(y3-y1) ); // not sure if fabs actuall needed ...  
   float chord13 = x1*y3 - y1*x3; 
   float PHI1 = 2 * asin( chord13 / (r13*r03) );
@@ -157,10 +89,11 @@ bool myTrack::trackParametersBeamlineConstraint(){
 
   // radius of trajectory  
   //float radiusAndre = ( (x1*x1 - x3*x3) + (y1*y1 - y3*y3) ) / ( 2*(x1 - x3) ); // not sure if formulea in Andres paper is quite correct ... ? 
+  float radiusAndre = (r01 * r03 * r13) / (2*chord13); 
   float radius = sqrt(a*a + b*b); 
 
   // kappa (1/radius) 
-  float kappa = 1/radius; 
+  float kappa_013 = 1/radius; 
 
   // transverse momentum
   float pT = 1.199 * fabs(radius/1000); // for a 4T magnetic field and radius in [m], divide by 1000 as length units in [mm]
@@ -189,6 +122,29 @@ bool myTrack::trackParametersBeamlineConstraint(){
   m_d0 = 0.0; // by definition (beamline constraint) 
   m_pT = pT;
   m_phi = phi;
+  m_kappa_013 = kappa_013; 
+
+
+
+  /////////////////////////////////////////////
+  // Calculate the track parameters without the beamline constraint
+  /////////////////////////////////////////////
+  
+  // circle described by (x-a)^2 + (y-b)^2 = r^2 
+  float b_nbc = ( (x3 - x1)*(r02*r02 - r01*r01) - (x2 - x1)*(r03*r03 - r01*r01) ) / ( 2*( (y2-y1)*(x3-x1) - (y3-y1)*(x2-x1)  ) );
+  float a_nbc = ( r02*r02 - r01*r01 - 2*b*(y2 - y1) ) / ( 2*(x2 - x1));
+  float radius_nbc = hypotf( (x1-a_nbc), (y1-b_nbc) );
+
+  // Andre's calculation
+  float chord_123 = x2*y3 + x1*y2 + x3*y1 - x3*y2 -x2*y1 - x1*y3;
+  float r12 = hypotf( (x2-x1), (y2-y1) );
+  float r23 = hypotf( (x3-x2), (y3-y2) );
+  m_kappa_123 = 2*chord_123 / (r12 * r13 * r23 ); 
+
+
+
+
+
   return true;
 
 }

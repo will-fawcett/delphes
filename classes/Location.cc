@@ -47,6 +47,9 @@ std::vector< std::string > Location::listOfLocationsInLayer(std::string location
 
   // matching criteria is the set of squares in eta phi that surround the square given by the location
   
+  //std::cout << "Location::listOfLocationsInLayer()" << std::endl;
+  //std::cout << "\tInputs: location " << location << " layer ID " << layerID << std::endl;
+  
   // split the string
   std::vector<int> tokens = split(location, '_');
   if(tokens.size() != 3){
@@ -58,8 +61,8 @@ std::vector< std::string > Location::listOfLocationsInLayer(std::string location
 
   // locations to return are those in the square around the input location
   std::vector<std::string> newLocations;
-  for(int iPhi=phiBin-1; iPhi==phiBin+1; ++iPhi){
-    for(int iEta=etaBin-1; iEta==etaBin+1; ++iEta){
+  for(int iPhi=phiBin-1; iPhi<=phiBin+1; ++iPhi){
+    for(int iEta=etaBin-1; iEta<=etaBin+1; ++iEta){
       std::string newLocation = this->formatLocation(layerID, iPhi, iEta);
       // ADD SOME PROTECTION AGAINST LOCATION NOT EXISTING 
       newLocations.push_back(newLocation);
