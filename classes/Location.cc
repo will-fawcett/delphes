@@ -1,5 +1,6 @@
 #include "classes/Location.h"
 #include <sstream>
+#include <algorithm>
 
 
 // Function to split string along delimiter, from: https://www.fluentcpp.com/2017/04/21/how-to-split-a-string-in-c/
@@ -38,9 +39,17 @@ std::string Location::locationFromEtaPhi(int surfaceID, float eta, float phi) co
   return this->formatLocation(surfaceID, thisPhiBin, thisEtaBin);
 }
 
+bool is_in_vector(std::vector<std::string>& v, std::string x){
+
+  if(std::find(v.begin(), v.end(), x) != v.end()) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 
-std::vector< std::string > Location::listOfLocationsInLayer(std::string location, int layerID) const{
+std::vector< std::string > Location::listOfLocationsInLayer(std::string location, int layerID) {
 
   // Based on matching criteria defined here, return a list of the locations in layer layerID
   // that are matched
@@ -62,13 +71,38 @@ std::vector< std::string > Location::listOfLocationsInLayer(std::string location
   // locations to return are those in the square around the input location
   std::vector<std::string> newLocations;
   for(int iPhi=phiBin-1; iPhi<=phiBin+1; ++iPhi){
+    if(iPhi > m_maxPhiBin || iPhi < m_minPhiBin) continue; // reject combinations outside of range
     for(int iEta=etaBin-1; iEta<=etaBin+1; ++iEta){
+      if(iEta > m_maxEtaBin || iEta < m_minEtaBin) continue; // reject combinations outside of range
       std::string newLocation = this->formatLocation(layerID, iPhi, iEta);
-      // ADD SOME PROTECTION AGAINST LOCATION NOT EXISTING 
-      newLocations.push_back(newLocation);
+      
+      // check location is in list of possible locations
+      //if(m_hasLocationsSet){
+      //if( is_in_vector( m_setOfLocationStrings, newLocation) ){
+          // if so add location 
+          newLocations.push_back(newLocation);
+          //}
+          //}
+
     }
   }
 
   return newLocations;
-
 }
+
+void Location::addSetOfLocationsStrings(std::vector<std::string> set){
+  m_setOfLocationStrings = set; 
+  m_hasLocationsSet = true;
+}
+
+void Location::printProperties() const{
+  std::cout << "Max eta bin" << m_maxEtaBin << std::endl;
+  std::cout << "Min eta bin" << m_minEtaBin << std::endl;
+
+  std::cout << "Max phi bin" << m_maxPhiBin << std::endl;
+  std::cout << "Min phi bin" << m_minPhiBin << std::endl;
+
+  std::cout << "number of eta bins: " << m_nEtaBins << std::endl;
+  std::cout << "number of phi bins: " << m_nPhiBins << std::endl;
+}
+

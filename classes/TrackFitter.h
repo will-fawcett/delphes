@@ -45,7 +45,7 @@ class TrackFitter{
     bool associateHitsLinearInToOut(hitContainer, float, float);
     bool associateHitsSimple(hitContainer&, float, float);
 
-    std::map<std::string, std::vector<Hit*>>  associateHitsSimplePattern(hitContainer&, Location) const;
+    std::map<std::string, std::vector<Hit*>>  associateHitsSimplePattern(hitContainer&, Location&) const;
 
     // functions to return tracks from hit collections
     bool combineHitsToTracksInToOut(); 

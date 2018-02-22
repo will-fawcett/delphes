@@ -10,6 +10,9 @@
 class Location{
 
   private: 
+    std::vector< std::string > m_setOfLocationStrings; 
+    bool m_hasLocationsSet;
+
     float m_phiWindowSize;
     float m_etaWindowSize;
     
@@ -24,6 +27,9 @@ class Location{
     const float m_phiMin = -M_PI; 
     const float m_phiMax = M_PI;
 
+    // maximum eta and phi bin numbers
+    int m_minPhiBin, m_maxPhiBin, m_minEtaBin, m_maxEtaBin;
+
     std::string formatLocation(int, int, int) const;
 
 
@@ -35,6 +41,7 @@ class Location{
 
       m_nPhiBins = 11;
       m_nEtaBins = 60; 
+      m_hasLocationsSet = false;
     }
 
     Location(float phiWindowSize, float etaWindowSize){
@@ -42,13 +49,25 @@ class Location{
       m_etaWindowSize = etaWindowSize;
 
       m_nPhiBins = ceil(2*M_PI / phiWindowSize); 
-      m_nEtaBins = ceil( (m_etaMax + fabs(m_etaMax)) / m_etaWindowSize);
+      m_nEtaBins = ceil( (m_etaMax + fabs(m_etaMin)) / m_etaWindowSize);
+
+      m_minPhiBin = 0; 
+      m_maxPhiBin = m_nPhiBins;
+
+      m_minEtaBin = -1*m_nEtaBins;
+      m_maxEtaBin = m_nEtaBins;
+
+      m_hasLocationsSet = false; 
+
     }
 
     std::string locationFromHit(Hit*) const;
     std::string locationFromEtaPhi(int, float, float) const; 
 
-    std::vector<std::string> listOfLocationsInLayer(std::string, int) const;
+    std::vector<std::string> listOfLocationsInLayer(std::string, int) ;
+
+    void addSetOfLocationsStrings(std::vector<std::string> ); 
+    void printProperties() const;
 
 };
 

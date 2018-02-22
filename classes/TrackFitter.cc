@@ -1,10 +1,9 @@
 #include "classes/TrackFitter.h" 
 #include "classes/HitCollection.h"
 #include <cmath>
+#include <algorithm>
 #include <utility>
 #include "TMath.h"
-#include "TGraphErrors.h"
-
 
 #include <ctime>
 
@@ -32,20 +31,27 @@ void printNewHitMap(std::map<std::string, std::vector<Hit*>> theMap){
   }
 }
 
-std::map<std::string, std::vector<Hit*> > TrackFitter::associateHitsSimplePattern(hitContainer& hc, Location loc) const{
+std::map<std::string, std::vector<Hit*> > TrackFitter::associateHitsSimplePattern(hitContainer& hc, Location& loc) const{
 
   // Separate collection of hits into "layer-eta"phi" regions
 
   // Some pre-defined knowledge about the tracker
   const float barrelLength = 2250; // [mm] 
 
+  // WJF: remove set-of-locations functionality
+  //std::vector<std::string> setOfLocations; 
+
   std::map<std::string, std::vector<Hit*> > newMap; 
   for(const auto layer : m_layerIDs){
     for(Hit* hit : hc[layer]){
       std::string locationString = loc.locationFromHit(hit);
       newMap[ locationString ].push_back(hit); 
+      //setOfLocations.push_back(locationString);
     }
   }
+
+  // add set of locations to the Location object
+  //loc.addSetOfLocationsStrings(setOfLocations);
 
   // debug 
   //printNewHitMap(newMap); 
@@ -67,16 +73,54 @@ std::vector<Hit*> concatenateHitsBasedOnLocations(std::map<std::string, std::vec
   // Can probably make this more efficient ? 
   std::vector<Hit*> newVec;
   for(const auto& location : locations){
-    newVec = concatenateVector(newVec, hitMap[location]);
+    /******************
+    try{
+      newVec = concatenateVector(newVec, hitMap.at(location));
+    }
+    catch(const std::out_of_range& oor){
+      std::cout << "out f range error with: " << location << std::endl;
+      std::cout << oor.what() << std::endl;
+    }
+    ********************/
+      newVec = concatenateVector(newVec, hitMap[location]);
+    
   }
   return newVec; 
 }
+
+
+
+std::vector<Hit*> concatenateHitsBasedOnLocations_Jon(const std::map<std::string, std::vector<Hit*>>& hitMap, const std::vector<std::string>& locations) {
+
+  // JB attempt, keeps giving out of range error 
+  std::vector<const std::vector<Hit*>*> vectorsToAdd;
+  vectorsToAdd.reserve(locations.size() );
+  std::size_t output_size(0);
+  for (const std::string& location : locations) {
+    try{
+      vectorsToAdd.push_back(&hitMap.at(location) );
+      output_size += vectorsToAdd.back()->size();
+    }
+    catch(const std::out_of_range& oor){
+      std::cout << "out f range error with: " << location << std::endl;
+      std::cout << oor.what() << std::endl;
+    }
+  }
+  std::vector<Hit*> outputVec;
+  outputVec.reserve(output_size);
+  for (const std::vector<Hit*>* vecPtr : vectorsToAdd)
+    std::copy(vecPtr->begin(), vecPtr->end(), std::back_inserter(outputVec) );
+  return outputVec;
+}
+
+
 
 
 bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
 
     // create a Location object (really just a function ... ) 
     Location loc(0.06, 0.1);
+    //loc.printProperties(); 
 
     // mapping of hits to eta-phi locations 
     std::map<std::string, std::vector<Hit*>> hitMap = this->associateHitsSimplePattern(hc, loc); 
@@ -86,8 +130,8 @@ bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
     //////////////////////////////////////////
 
 
-    const float tolerance = 1.0; // [mm]
-    //float tolerance = 0.1; // [mm]
+    //const float tolerance = 1.0; // [mm]
+    const float tolerance = 0.1; // [mm]
 
     // get the inner and outer barrel radii
     const int innerLayerID = m_layerIDs.at(0);
