@@ -109,7 +109,8 @@ bool myTrack::trackParametersTriplet(){
   // Assign the track parameters
   m_z0 = z1 - s1* ( z3 - z1 ) / (s3 - s1);
   m_theta = atan2f( (s3-s1), (z3-z1) );  // atan2f returns theta in [-pi, pi] 
-  //if(m_theta < 0) m_theta += 2*M_PI; 
+
+  // check eta calculation is correct
   m_eta = -1*log( tan( fabs(m_theta)/2.0 )); // take fabs(theta), want -pi and pi to be treated the same
   if(isnan(m_eta)){
     std::cerr << "trackParametersBeamlineConstraint(): ERROR: Eta calculation performed incorrectly." << std::endl; 
@@ -117,6 +118,7 @@ bool myTrack::trackParametersTriplet(){
     std::cerr << "tan(fabs(m_theta)/2.0): " << tan(fabs(m_theta)/2.0) << std::endl;
     std::cerr << "log(tan(fabs(m_theta))): " << log( tan(fabs(m_theta)/2.0) ) << std::endl;
     std::cerr << "Curious and curiouser ... " << std::endl;
+    m_eta = -100.0;
     return false;
   }
   m_d0 = 0.0; // by definition (beamline constraint) 
