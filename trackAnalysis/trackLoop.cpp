@@ -1,5 +1,7 @@
 #define trackLoop_cxx
 
+#include "TVector3.h"
+
 #include "trackLoop.h"
 #include "ExRootAnalysis/ExRootResult.h"
 
@@ -128,9 +130,29 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
     TVector3 p1 = fillTV3(hit1rho, hit1phi, 0); 
     TVector3 p2 = fillTV3(hit2rho, hit2phi, 0); 
     TVector3 p3 = fillTV3(hit3rho, hit3phi, 0); 
-    TVector3 zhad = fillTV3(0, 0, 1);
+    TVector3 zhat(0, 0, 1); // z direction vector
 
-    float sin12 = p1.Cross(p2) / (p1.Mag() * p2.Mag()) // does this even make any sense, as to calculate the signed angle difference 
+    // z component of the cross product of two angles
+    float z_phi12 = p1.Cross(p2)*zhat / (p1.Mag() * p2.Mag()); 
+    float z_phi13 = p1.Cross(p3)*zhat / (p1.Mag() * p3.Mag());
+    float z_phi23 = p2.Cross(p3)*zhat / (p2.Mag() * p3.Mag());
+    float z_12m23 = z_phi12 * z_phi23;
+    float z_12p23 = z_phi12 + z_phi13; 
+
+    if(isFake){
+      plots->z_phi12_fake.at(branchCounter)->Fill(z_phi12);
+      plots->z_phi13_fake.at(branchCounter)->Fill(z_phi13);
+      plots->z_phi23_fake.at(branchCounter)->Fill(z_phi23);
+      plots->z_phi12m23_fake.at(branchCounter)->Fill(z_12m23);
+      plots->z_phi12p23_fake.at(branchCounter)->Fill(z_12p23);
+    }
+    else{
+      plots->z_phi12_true.at(branchCounter)->Fill(z_phi12);
+      plots->z_phi13_true.at(branchCounter)->Fill(z_phi13);
+      plots->z_phi23_true.at(branchCounter)->Fill(z_phi23);
+      plots->z_phi12m23_true.at(branchCounter)->Fill(z_12m23);
+      plots->z_phi12p23_true.at(branchCounter)->Fill(z_12p23);
+    }
 
 
     ////////////////////////////////////////////////
@@ -179,6 +201,9 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
 
     // z residuum over eta (extra information)
     if(fabs( zresiduum/fabs(eta) ) > 0.4) continue; 
+
+    // Phi constraint, such that the differences in phi angles are in the same sense when moving from one tracking layer to the next
+    if(z_12m23 < 0) continue;
 
     //long long int hit3PtID = static_cast<long long int>( hit3pT*10E8 );
     //uniqueHitMomenta.insert(hit3PtID);
