@@ -35,6 +35,7 @@ class TrackFitter{
 
     // private member variables
     std::vector< myTrack > m_tracks;
+
     fitTypes fitType;
     std::vector<float> m_parameters;
     std::vector<HitCollection> m_associatedHitCollection;
@@ -57,14 +58,17 @@ class TrackFitter{
     bool calculateRPhiWindowOutToIn(const float, const float, const float);
     float calculateRPhiWindowInToOut(const float, const float, const float);
 
+    float m_tolerance;
+
   public:
     
     // constructor 
-    TrackFitter(const fitTypes ftIn, std::vector<float> paramIn, std::vector<int> layerIDs){
+    TrackFitter(const fitTypes ftIn, std::vector<float> paramIn, std::vector<int> layerIDs, float tolerance){
       fitType=ftIn;
       m_parameters=paramIn;
       m_debug = false;
       m_layerIDs = layerIDs;
+      m_tolerance = tolerance; // tolerance for beamline constraint
     };
 
     TrackFitter(){
@@ -80,6 +84,8 @@ class TrackFitter{
     bool AssociateHits(hitContainer& hc);
     std::vector <myTrack> GetTracks();
     void ApplyCurvatureCut(float);
+    void ApplyPtDependantCurvatureCut(std::vector<float> pT_thresholds, std::vector<float> kappaThresholds);
+
 
 };
 #endif // TrackFitter_h

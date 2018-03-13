@@ -74,6 +74,7 @@ add_subdirectory(modules)
 add_subdirectory(readers)
 add_subdirectory(cards)
 add_subdirectory(analysis) # WJF: add for my analysis code 
+add_subdirectory(trackAnalysis) # WJF: add for my analysis code 
 
 add_library(Delphes SHARED
   $<TARGET_OBJECTS:classes> 

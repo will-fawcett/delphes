@@ -19,9 +19,6 @@ bool myTrack::calculateTrackParameters( cartesianCoordinate coord, trackParamAlg
   return true; 
 }
 
-
-
-
 bool myTrack::trackParametersTriplet(){
 
   /****************
@@ -102,6 +99,7 @@ bool myTrack::trackParametersTriplet(){
   float s1 = radius * PHI1;
   float s3 = radius * PHI3; 
 
+
   // phi angle given by line tangent to the circle at (0,0) 
   // atan2(y, x)
   float phi = atan2f(-b, a); // will return [-pi, pi] 
@@ -109,6 +107,7 @@ bool myTrack::trackParametersTriplet(){
   // Assign the track parameters
   m_z0 = z1 - s1* ( z3 - z1 ) / (s3 - s1);
   m_theta = atan2f( (s3-s1), (z3-z1) );  // atan2f returns theta in [-pi, pi] 
+
 
   // check eta calculation is correct
   m_eta = -1*log( tan( fabs(m_theta)/2.0 )); // take fabs(theta), want -pi and pi to be treated the same
@@ -142,10 +141,6 @@ bool myTrack::trackParametersTriplet(){
   float r12 = hypotf( (x2-x1), (y2-y1) );
   float r23 = hypotf( (x3-x2), (y3-y2) );
   m_kappa_123 = 2*chord_123 / (r12 * r13 * r23 ); 
-
-
-
-
 
   return true;
 
@@ -219,5 +214,11 @@ void myTrack::printHitInfo() const {
 
   }
 
-
 }
+
+bool myTrack::testKappaThreshold(float threshold) const{
+  // return true if delta kappa is smaller than threshold. False otherwise
+  if( fabs( m_kappa_123 - m_kappa_013)  < threshold ) return true;
+  else return false; 
+}
+

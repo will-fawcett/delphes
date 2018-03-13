@@ -129,10 +129,6 @@ bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
     // Simplest possible algorithm 
     //////////////////////////////////////////
 
-
-    //const float tolerance = 1.0; // [mm]
-    const float tolerance = 0.1; // [mm]
-
     // get the inner and outer barrel radii
     const int innerLayerID = m_layerIDs.at(0);
     const int outerLayerID = m_layerIDs.back();
@@ -182,18 +178,19 @@ bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
         params.calculateLineParameters(zInner, rInner, zOuter, rOuter);
 
         // reject if line does not point to within 3 sigma of the luminous region
-        const float beamlineIntersect = params.x_intercept() ;
+        float beamlineIntersect = params.x_intercept() ;
+        //std::cout << "beamlineIntersect: " << beamlineIntersect << ", min: " << minZ << ", max: " << maxZ << std::endl;
         if(beamlineIntersect > maxZ || beamlineIntersect < minZ) continue;
 
         // intersection of the line with the intermediate layer
-        const float intersect = (582.0 - params.y_intercept())/params.gradient();
+        float intersect = (582.0 - params.y_intercept())/params.gradient();
 
         //for(const auto& intermediateHit : hc[middleLayerID]){
         for(const auto& intermediateHit : middleHitVector){
-          const float zInter = intermediateHit->Z;
 
+          float middleZresiduum = intermediateHit->Z - intersect;
           // only select if intermediate hit matches within tolerance along Z  
-          if(fabs( zInter - intersect) < tolerance){
+          if(fabs(middleZresiduum) < m_tolerance){
 
             // reject the intermediate hit if it is also outside the phi window
             if( quickDeltaPhi(phiInner, intermediateHit->Phi) > phiWindow) continue; 
@@ -212,7 +209,9 @@ bool TrackFitter::associateHitsSimple(hitContainer& hc, float minZ, float maxZ){
             std::cout << "Layer:   Inner: " << innerHit->SurfaceID << "\tMiddle: " << intermediateHit->SurfaceID << "\touter: " << outerHit->SurfaceID << std::endl;
             *****************/
 
-            m_tracks.push_back( myTrack(matchedHits) ); 
+            myTrack aTrack(matchedHits, beamlineIntersect, middleZresiduum);
+            m_tracks.push_back( aTrack ); 
+            //m_tracks.emplace_back(  ); 
           }
         }
       }
@@ -649,7 +648,7 @@ bool TrackFitter::combineHitsToTracksMatchingInnerAndOutermost(){
         if(nMatchedHits == numIntermediateLayers){
 
           // Now create a straight line with all points (re-fit the track with the extra hits) 
-          myTrack aTrack(trackHits);
+          myTrack aTrack(trackHits, 0, 0);
           m_tracks.push_back( aTrack ); 
           numTracksCreatedFromThisHit++;
         }
@@ -694,7 +693,8 @@ bool TrackFitter::combineHitsToTracksInToOut(){
     for(auto& combination : hitCombinations){
       if(m_debug) std::cout << "This combination has " << combination.size() << " hits." << std::endl;
 
-      myTrack aTrack(combination);
+
+      myTrack aTrack(combination, 0, 0);
 
       // if track has z0 outside of the defined window, reject the track
       float maxZ = m_parameters.at(1);
@@ -702,6 +702,7 @@ bool TrackFitter::combineHitsToTracksInToOut(){
         //std::cout << "Track found outside luminous region" << std::endl;
         continue;
       }
+
       m_tracks.push_back(aTrack); // add to collection of tracks 
     }
   }
@@ -780,5 +781,23 @@ void TrackFitter::ApplyCurvatureCut(float cut){
     }
   }
   m_tracks = newVec; 
+}
 
+void TrackFitter::ApplyPtDependantCurvatureCut(std::vector<float> pT_thresholds, std::vector<float> kappaThresholds){
+
+  // loop over all tracks, remove those with curvature less than cut for applied pT threshold
+  std::vector< myTrack > newVec;
+  for(const myTrack& track : m_tracks){
+    float deltaKappa = fabs(track.kappa_bc() - track.kappa_nbc()); 
+    bool trackPasses(true);
+
+    // test if the track passes the cuts  
+    for(int i=0; i<pT_thresholds.size(); ++i){
+      if( track.Pt() > pT_thresholds.at(i) ){
+        trackPasses = track.testKappaThreshold(kappaThresholds.at(i));
+      }
+    }
+    if(trackPasses) newVec.push_back(track);
+  }
+  m_tracks = newVec; 
 }

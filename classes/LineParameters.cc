@@ -1,12 +1,11 @@
 #include "classes/LineParameters.h"
 
-
-
 void LineParameters::calculateLineParameters(float x0, float y0, float x1, float y1){
   // Calculate the parameters of the straight line passing through the coordinates (x0, y0), (x1, y1)
 
   m_gradient = (y0 - y1) / (x0 - x1); 
   m_y_intercept  = (x1*y0 - x0*y1) / (x1 - x0);
+  //m_y_intercept = y1 - m_gradient*x1;
   m_x_intercept = -1*m_y_intercept/m_gradient; 
 }
 
