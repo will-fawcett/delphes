@@ -8,6 +8,8 @@
 #include <algorithm>
 #include <set>
 
+#include "BDTG_depth3.cpp"
+
 class cutHolder{
   private:
     std::string m_cutName;
@@ -52,7 +54,7 @@ inline void printTrackStats(TString info, float n1, float n2){
 }
 
 
-void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> tripletLayers, float zresiduumCut)
+void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> tripletLayers, float zresiduumCut, int useBDT)
 {
 
   // Calculate some DeltaPhi angles for 
@@ -79,20 +81,39 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
   // All tracks
   int numRecoTracksPt0 = nentries;
   int numRecoTracksPt2(0);
+  int numRecoTracksHitPt2(0);
+  int numRecoTracksPt3(0);
+  int numRecoTracksPt5(0);
+
   int numRecoTracksPt0Surviving(0);
   int numRecoTracksPt2Surviving(0);
+  int numRecoTracksHitPt2Surviving(0);
+  int numRecoTracksPt3Surviving(0);
+  int numRecoTracksPt5Surviving(0);
 
   // True tracks
   int numTrueTracksPt0(0);
   int numTrueTracksPt2(0);
+  int numTrueTracksHitPt2(0);
+  int numTrueTracksPt3(0);
+  int numTrueTracksPt5(0);
   int numTrueTracksPt0Surviving(0);
   int numTrueTracksPt2Surviving(0);
+  int numTrueTracksHitPt2Surviving(0);
+  int numTrueTracksPt3Surviving(0);
+  int numTrueTracksPt5Surviving(0);
 
   // Fake tracks 
   int numFakeTracksPt0(0);
   int numFakeTracksPt2(0);
+  int numFakeTracksHitPt2(0);
+  int numFakeTracksPt3(0);
+  int numFakeTracksPt5(0);
   int numFakeTracksPt0Surviving(0);
   int numFakeTracksPt2Surviving(0);
+  int numFakeTracksHitPt2Surviving(0);
+  int numFakeTracksPt3Surviving(0);
+  int numFakeTracksPt5Surviving(0);
 
   std::vector<float> hitMomenta;
   hitMomenta.reserve(nentries); // is this too much?  
@@ -112,6 +133,22 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
   std::vector<float> kappaThresholds = {0.005, 0.002, 0.0015, 0.001, 0.001, 0.001, 0.0005}; 
 
 
+  // Definition for the BDT
+  std::vector<std::string> inputNames = { 
+    "abs(tracks50.kappa_123-tracks50.kappa_013)",
+    "tracks50.pT",
+    "abs(tracks50.zresiduum)",
+    "abs(tracks50.beamlineIntersect)",
+    "abs(tracks50.hit1phi-tracks50.hit2phi)",
+    "abs(tracks50.hit2phi-tracks50.hit3phi)",
+    "abs(tracks50.hit1phi-tracks50.hit3phi)",
+    "tracks50.z_phi12*tracks50.z_phi23",
+    "abs(tracks50.zresiduum/tracks50.eta)"
+  };
+
+  IClassifierReader * BDTCalculator = new ReadBDTG( inputNames ); 
+
+
   // Loop over tracks 
   // Note that there are more tracks than hits in the outer layer, since there are fake tracks 
   for (Long64_t jentry=0; jentry<nentries;jentry++) {
@@ -121,7 +158,6 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
 
     if(jentry%50000 == 0) std::cout << "Entry " << jentry << "/" << nentries << std::endl;
 
-    bool keepTrack = true; 
 
     // Useful delta kappa 
     float deltaKappa = kappa_123 - kappa_013;
@@ -140,6 +176,7 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
     float z_12p23 = z_phi12 + z_phi13; 
 
     if(isFake){
+      fakeTrackHitPt.insert(hit3pT);
       plots->z_phi12_fake.at(branchCounter)->Fill(z_phi12);
       plots->z_phi13_fake.at(branchCounter)->Fill(z_phi13);
       plots->z_phi23_fake.at(branchCounter)->Fill(z_phi23);
@@ -147,6 +184,7 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
       plots->z_phi12p23_fake.at(branchCounter)->Fill(z_12p23);
     }
     else{
+      trueTrackHitPt.insert(hit3pT);
       plots->z_phi12_true.at(branchCounter)->Fill(z_phi12);
       plots->z_phi13_true.at(branchCounter)->Fill(z_phi13);
       plots->z_phi23_true.at(branchCounter)->Fill(z_phi23);
@@ -160,109 +198,170 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
     ////////////////////////////////////////////////
     
     // All tracks (true or fake) 
+    if(hit3pT > 2) numRecoTracksHitPt2++;
     if(pT > 2){
       numRecoTracksPt2++;
+      if(pT > 3) numRecoTracksPt3++;
+      if(pT > 5) numRecoTracksPt5++;
     }
     if(isFake){
       numFakeTracksPt0++;
+      if(hit3pT > 2) numFakeTracksHitPt2++;
       if(pT > 2) numFakeTracksPt2++;
+      if(pT > 3) numFakeTracksPt3++;
+      if(pT > 5) numFakeTracksPt5++;
     }
     else{
       numTrueTracksPt0++;
+      // plot for efficiency (assume selection 100% efficient for true tracks, prior to the selections in this code) 
+      plots->nHitsPt.at(branchCounter)->Fill(hit3pT);
+      if(hit3pT > 2) numTrueTracksHitPt2++;
       if(pT > 2) numTrueTracksPt2++;
+      if(pT > 3) numTrueTracksPt3++;
+      if(pT > 5) numTrueTracksPt5++;
     }
 
-    // Plots for tracks without selection
-    plots->nHitsPt.at(branchCounter)->Fill(hit3pT);
+
 
     /////////////////////////
-    // Ideas to cut out fakes
+    // Use of BDTg to remove fakes
     /////////////////////////
-    
-    // Kappa 
-    for(int i=0; i<pTthresholds.size(); ++i){
-      if(pT > pTthresholds.at(i)){
-        if(fabs(deltaKappa) > kappaThresholds.at(i)) continue; // cut the track if kappa is too large
+    if(useBDT){
+      std::vector<double> inputVariables = {
+        fabs(kappa_123-kappa_013),
+        pT,
+        fabs(zresiduum),
+        fabs(beamlineIntersect),
+        fabs(hit1phi-hit2phi),
+        fabs(hit2phi-hit3phi),
+        fabs(hit1phi-hit3phi),
+        z_phi12*z_phi23,
+        fabs(zresiduum/eta)
+      };
+
+      // get the BDT response  
+      double BDTResponse = BDTCalculator->GetMvaValue( inputVariables );
+      if(BDTResponse < -0.8) continue; 
+    }
+    else{
+
+      /////////////////////////
+      // Ideas to cut out fakes
+      /////////////////////////
+      
+      // Kappa 
+      bool rejectTrack(false);
+      for(int i=0; i<pTthresholds.size(); ++i){
+        if(pT > pTthresholds.at(i)){
+          if(fabs(deltaKappa) > kappaThresholds.at(i)) rejectTrack = true; // cut the track if kappa is too large
+        }
       }
-    }
+      if(rejectTrack) continue; 
+      //if(pT > 0 && fabs(deltaKappa)    > 0.005) continue;
+      if(pT > 0 && fabs(deltaKappa)    > 0.003) continue;
+      if(pT > 2.0 && fabs(deltaKappa)  > 0.002) continue; // 0.002 is super efficient!
+      if(pT > 2.0 && fabs(deltaKappa)  > 0.0015) continue; // new, not harsh  
+
+      if(pT > 3.5 && fabs(deltaKappa)  > 0.001) continue; // new 
+
+      //if(pT > 5.0 && fabs(deltaKappa) > 0.001) continue; // new 
+      //if(pT > 2.0 && fabs(deltaKappa)  > 0.0005) continue;
+      //if(pT > 10.0 && fabs(deltaKappa) > 0.0015) continue;
+      //if(pT > 10.0 && fabs(deltaKappa) > 0.0005) continue;
+      //if(pT > 20.0 && fabs(deltaKappa) > 0.001) continue;
+      if(pT > 50.0 && fabs(deltaKappa) > 0.0005) continue;
 
 
-    // Delta-phi constraints
-    float deltaPhi12 = fabs(hit1phi - hit2phi);
-    float deltaPhi23 = fabs(hit2phi - hit3phi);
-    float deltaPhi13 = fabs(hit1phi - hit3phi);
-    if(deltaPhi12 > deltaPhi12Limit) continue;
-    if(deltaPhi23 > deltaPhi23Limit) continue;
-    if(deltaPhi13 > deltaPhi13Limit) continue;
-  
 
-    // z residuum 
-    if(fabs(zresiduum) > zresiduumCut) continue; 
+      // Delta-phi constraints
+      float deltaPhi12 = fabs(hit1phi - hit2phi);
+      float deltaPhi23 = fabs(hit2phi - hit3phi);
+      float deltaPhi13 = fabs(hit1phi - hit3phi);
+      if(deltaPhi12 > deltaPhi12Limit) continue;
+      if(deltaPhi23 > deltaPhi23Limit) continue;
+      if(deltaPhi13 > deltaPhi13Limit) continue;
+    
 
-    // z residuum over eta (extra information)
-    if(fabs( zresiduum/fabs(eta) ) > 0.4) continue; 
+      // z residuum 
+      if(fabs(zresiduum) > zresiduumCut) continue; 
 
-    // Phi constraint, such that the differences in phi angles are in the same sense when moving from one tracking layer to the next
-    if(z_12m23 < 0) continue;
+      // z residuum over eta (extra information)
+      if(fabs( zresiduum/fabs(eta) ) > 0.4) continue; 
+
+      // Phi constraint, such that the differences in phi angles are in the same sense when moving from one tracking layer to the next
+      if(z_12m23 < 0) continue;
+
+      // beamline intersect
+      if(fabs(beamlineIntersect) > 200) continue; 
+
+    } // end if else(useBDT)
+
 
     //long long int hit3PtID = static_cast<long long int>( hit3pT*10E8 );
-    //uniqueHitMomenta.insert(hit3PtID);
 
-    /*********
-      if( isnt_in_vector( hitMomenta, hit3pT ) ){ 
-      hitMomenta.push_back(hit3pT); 
-      uniqueHitMomenta++;
-    // If so, add to hit pT 
-    }
-     *********/
-
+  
     plots->recoTrackPt.at(branchCounter)->Fill(pT);
 
     // Count number of surviving tracks 
     numRecoTracksPt0Surviving++;
-    if(pT > 2) {
-      numRecoTracksPt2Surviving++;
-    }
-
+    if(hit3pT > 2) numRecoTracksHitPt2Surviving++;
+    if(pT > 2) numRecoTracksPt2Surviving++;
+    if(pT > 3) numRecoTracksPt3Surviving++;
+    if(pT > 5) numRecoTracksPt5Surviving++;
 
     if(isFake){
       // FAKE TRACKS 
       plots->recoTrackPt_fake.at(branchCounter)->Fill(pT); 
       //fakeTrackHitPt.push_back(hit3pT);
-      fakeTrackHitPt.insert(hit3pT);
       numFakeTracksPt0Surviving++;
+      if(hit3pT > 2) numFakeTracksHitPt2Surviving++;
       if(pT>2) numFakeTracksPt2Surviving++;
+      if(pT>3) numFakeTracksPt3Surviving++;
+      if(pT>5) numFakeTracksPt5Surviving++;
     }
     else{
       // TRUE TRACKS
       //trueTrackHitPt.push_back(hit3pT);
-      trueTrackHitPt.insert(hit3pT);
-      plots->recoTrackHitPt_true.at(branchCounter)->Fill(hit3pT);
-      plots->recoTrackHitEta_true.at(branchCounter)->Fill(hit3eta);
       plots->recoTrackPt_true.at(branchCounter)->Fill(pT); 
       numTrueTracksPt0Surviving++;
-      if(pT > 2){
-        numTrueTracksPt2Surviving++;
-      }
+      if(hit3pT > 2) numTrueTracksHitPt2Surviving++;
+      if(pT > 2)numTrueTracksPt2Surviving++;
+      if(pT > 3)numTrueTracksPt3Surviving++;
+      if(pT > 5)numTrueTracksPt5Surviving++;
+      plots->recoTrackHitPt_true.at(branchCounter)->Fill(hit3pT); // for efficiency
+      plots->recoTrackHitEta_true.at(branchCounter)->Fill(hit3eta); // for efficiency
     }
 
   } // End loop over tracks
 
   std::cout << "Results: " << std::endl;
+  std::cout << "unique fake hit pT: " << fakeTrackHitPt.size() << std::endl;
+  std::cout << "unique true hit pT: " << trueTrackHitPt.size() << std::endl;
 
   // All tracks
   printTrackStats("Number of tracks: ", numRecoTracksPt0Surviving, numRecoTracksPt0);
   printTrackStats("Number of tracks pT > 2: ", numRecoTracksPt2Surviving, numRecoTracksPt2); 
+  printTrackStats("Number of tracks hit pT > 2: ", numRecoTracksHitPt2Surviving, numRecoTracksHitPt2); 
+  printTrackStats("Number of tracks pT > 3: ", numRecoTracksPt3Surviving, numRecoTracksPt3); 
+  printTrackStats("Number of tracks pT > 5: ", numRecoTracksPt5Surviving, numRecoTracksPt5); 
 
   // Fake tracks
   printTrackStats("Fake tracks: ", numFakeTracksPt0Surviving, numFakeTracksPt0);
   printTrackStats("Fake tracks pT > 2: ", numFakeTracksPt2Surviving, numFakeTracksPt2);
+  printTrackStats("Fake tracks hit pT > 2: ", numFakeTracksHitPt2Surviving, numFakeTracksHitPt2);
+  printTrackStats("Fake tracks pT > 3: ", numFakeTracksPt3Surviving, numFakeTracksPt3);
+  printTrackStats("Fake tracks pT > 5: ", numFakeTracksPt5Surviving, numFakeTracksPt5);
 
   // True tracks
   printTrackStats("True tracks: ", numTrueTracksPt0Surviving, numTrueTracksPt0);
   printTrackStats("True tracks pT > 2: ", numTrueTracksPt2Surviving, numTrueTracksPt2);
+  printTrackStats("True tracks hit pT > 2: ", numTrueTracksHitPt2Surviving, numTrueTracksHitPt2);
+  printTrackStats("True tracks pT > 3: ", numTrueTracksPt3Surviving, numTrueTracksPt3);
+  printTrackStats("True tracks pT > 5: ", numTrueTracksPt5Surviving, numTrueTracksPt5);
 
   std::cout << "Average fake rate (pT > 2): " << 100*float(numFakeTracksPt2Surviving)/float(numRecoTracksPt2Surviving) << " %" << std::endl;
+  std::cout << "Average fake rate (pT > 3): " << 100*float(numFakeTracksPt3Surviving)/float(numRecoTracksPt3Surviving) << " %" << std::endl;
+  std::cout << "Average fake rate (pT > 5): " << 100*float(numFakeTracksPt5Surviving)/float(numRecoTracksPt5Surviving) << " %" << std::endl;
 
   std::cout << "Unique hits momenta: "   << uniqueHitMomenta.size() << std::endl;
 
@@ -274,7 +373,7 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
   plots->nRecoTracksMatchedPt2.at(branchCounter)->Fill(numTrueTracksPt2);
   plots->nRecoTracksPt2.at(branchCounter)->Fill(numRecoTracksPt2);
 
-  std::cout << "Finished Loop()" << std::endl;
+  std::cout << "Finished Loop()\n" << std::endl;
 }
 
 # ifndef __CINT__
@@ -282,6 +381,18 @@ int main(int argc, char* argv[]){
 
   TString sampleName = argv[1]; 
   TString outputFile = argv[2];
+  int useBDT         = atoi(argv[3]);
+  if(!(useBDT == 0 || useBDT == 1)){
+    std::cerr << "ERROR: arg3 must be either 0 or 1" << std::endl;
+    std::cout << "You entered: " << useBDT << std::endl;
+    return 0;
+  }
+  if(useBDT){ 
+    std::cout << "User selected to use BDT" << std::endl;
+  }
+  else{
+    std::cout << "User selected to use rectangular cuts" << std::endl;
+  }
 
   ExRootResult *result = new ExRootResult();
   Plots        *plots  = new Plots;
@@ -315,7 +426,7 @@ int main(int argc, char* argv[]){
   int branchCounter(0);
   for(auto branchName : branchNames){
     trackLoop theLoop(branchName, sampleName);
-    theLoop.Loop(plots, branchCounter, tripletLayouts[branchName], zresduumCuts[branchName]);
+    theLoop.Loop(plots, branchCounter, tripletLayouts[branchName], zresduumCuts[branchName], useBDT);
     branchCounter++;
   }
 

@@ -57,7 +57,7 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree* tree, TString branchIdentifier);
-   virtual void     Loop(Plots* plots, int counter, std::vector<float> layerRadii, float zresiduumCut);
+   virtual void     Loop(Plots* plots, int counter, std::vector<float> layerRadii, float zresiduumCut, int useBDT);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 
