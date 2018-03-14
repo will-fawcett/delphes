@@ -8,7 +8,12 @@
 #include <algorithm>
 #include <set>
 
-#include "BDTG_depth3.cpp"
+#include "IClassifierReader.h"
+#include "BDTG_depth3_10mm.cpp"
+#include "BDTG_depth3_20mm.cpp"
+#include "BDTG_depth3_30mm.cpp"
+#include "BDTG_depth3_40mm.cpp"
+#include "BDTG_depth3_50mm.cpp"
 
 class cutHolder{
   private:
@@ -56,6 +61,8 @@ inline void printTrackStats(TString info, float n1, float n2){
 
 void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> tripletLayers, float zresiduumCut, int useBDT)
 {
+  // triplet spacing string
+  std::string tripletSpacingStr = std::to_string( (branchCounter+1)*10 );
 
   // Calculate some DeltaPhi angles for 
   float deltaPhi12Limit = calcDeltaPhiLimit(tripletLayers.at(0), tripletLayers.at(1));
@@ -135,18 +142,23 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
 
   // Definition for the BDT
   std::vector<std::string> inputNames = { 
-    "abs(tracks50.kappa_123-tracks50.kappa_013)",
-    "tracks50.pT",
-    "abs(tracks50.zresiduum)",
-    "abs(tracks50.beamlineIntersect)",
-    "abs(tracks50.hit1phi-tracks50.hit2phi)",
-    "abs(tracks50.hit2phi-tracks50.hit3phi)",
-    "abs(tracks50.hit1phi-tracks50.hit3phi)",
-    "tracks50.z_phi12*tracks50.z_phi23",
-    "abs(tracks50.zresiduum/tracks50.eta)"
+    "abs(tracks"+tripletSpacingStr+".kappa_123-tracks"+tripletSpacingStr+".kappa_013)",
+    "tracks"+tripletSpacingStr+".pT",
+    "abs(tracks"+tripletSpacingStr+".zresiduum)",
+    "abs(tracks"+tripletSpacingStr+".beamlineIntersect)",
+    "abs(tracks"+tripletSpacingStr+".hit1phi-tracks"+tripletSpacingStr+".hit2phi)",
+    "abs(tracks"+tripletSpacingStr+".hit2phi-tracks"+tripletSpacingStr+".hit3phi)",
+    "abs(tracks"+tripletSpacingStr+".hit1phi-tracks"+tripletSpacingStr+".hit3phi)",
+    "tracks"+tripletSpacingStr+".z_phi12*tracks"+tripletSpacingStr+".z_phi23",
+    "abs(tracks"+tripletSpacingStr+".zresiduum/tracks"+tripletSpacingStr+".eta)"
   };
 
-  IClassifierReader * BDTCalculator = new ReadBDTG( inputNames ); 
+  IClassifierReader * BDTCalculator;
+  if(branchCounter == 0 ) BDTCalculator  = new ReadBDTG10( inputNames ); 
+  if(branchCounter == 1 ) BDTCalculator  = new ReadBDTG20( inputNames ); 
+  if(branchCounter == 2 ) BDTCalculator  = new ReadBDTG30( inputNames ); 
+  if(branchCounter == 3 ) BDTCalculator  = new ReadBDTG40( inputNames ); 
+  if(branchCounter == 4 ) BDTCalculator  = new ReadBDTG50( inputNames ); 
 
 
   // Loop over tracks 
