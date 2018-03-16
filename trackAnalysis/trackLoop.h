@@ -14,8 +14,11 @@
 #include <iostream>
 
 #include "analysis/plotting.cpp"
+#include "json.h"
 
 // Header file for the classes stored in the TTree if any.
+
+using nlohmann::json;
 
 class trackLoop {
 public :
@@ -57,7 +60,7 @@ public :
    virtual Int_t    GetEntry(Long64_t entry);
    virtual Long64_t LoadTree(Long64_t entry);
    virtual void     Init(TTree* tree, TString branchIdentifier);
-   virtual void     Loop(Plots* plots, int counter, std::vector<float> layerRadii, float zresiduumCut, int useBDT);
+   virtual json     Loop(Plots* plots, int counter, std::vector<float> layerRadii, float zresiduumCut, int useBDT, int nEventsMax, float BDTCut, float deltaKappaCut);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 

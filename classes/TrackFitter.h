@@ -68,7 +68,7 @@ class TrackFitter{
       m_parameters=paramIn;
       m_debug = false;
       m_layerIDs = layerIDs;
-      m_tolerance = tolerance; // tolerance for beamline constraint
+      m_tolerance = tolerance; // tolerance for z residuum
     };
 
     TrackFitter(){

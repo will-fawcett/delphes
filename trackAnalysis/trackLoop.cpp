@@ -15,6 +15,10 @@
 #include "BDTG_depth3_40mm.cpp"
 #include "BDTG_depth3_50mm.cpp"
 
+#include "json.h"
+#include <fstream>
+
+
 class cutHolder{
   private:
     std::string m_cutName;
@@ -59,7 +63,7 @@ inline void printTrackStats(TString info, float n1, float n2){
 }
 
 
-void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> tripletLayers, float zresiduumCut, int useBDT)
+json trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> tripletLayers, float zresiduumCut, int cutsOption, int nEventsMax, float BDTCut, float deltaKappaCut)
 {
   // triplet spacing string
   std::string tripletSpacingStr = std::to_string( (branchCounter+1)*10 );
@@ -69,7 +73,11 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
   float deltaPhi23Limit = calcDeltaPhiLimit(tripletLayers.at(1), tripletLayers.at(2));
   float deltaPhi13Limit = calcDeltaPhiLimit(tripletLayers.at(0), tripletLayers.at(2));
 
-  if (fChain == 0) return;
+  if (fChain == 0){
+    json empty; // hack
+    return empty; 
+  }
+
   Long64_t nentries = fChain->GetEntriesFast();
   std::cout << "About to loop over " << nentries << std::endl;
   Long64_t nbytes = 0, nb = 0;
@@ -170,6 +178,10 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
 
     if(jentry%50000 == 0) std::cout << "Entry " << jentry << "/" << nentries << std::endl;
 
+    if(nEventsMax > 0){
+      if(jentry > nEventsMax) break; // cancel loop after nEventsMax
+    }
+
 
     // Useful delta kappa 
     float deltaKappa = kappa_123 - kappa_013;
@@ -238,7 +250,7 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
     /////////////////////////
     // Use of BDTg to remove fakes
     /////////////////////////
-    if(useBDT){
+    if(cutsOption == 1 || cutsOption == 2){
       std::vector<double> inputVariables = {
         fabs(kappa_123-kappa_013),
         pT,
@@ -253,9 +265,9 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
 
       // get the BDT response  
       double BDTResponse = BDTCalculator->GetMvaValue( inputVariables );
-      if(BDTResponse < -0.8) continue; 
+      if(BDTResponse < BDTCut) continue; 
     }
-    else{
+    if(cutsOption == 0 || cutsOption == 2){
 
       /////////////////////////
       // Ideas to cut out fakes
@@ -306,7 +318,7 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
       // beamline intersect
       if(fabs(beamlineIntersect) > 200) continue; 
 
-    } // end if else(useBDT)
+    } // end if else(cutsOption)
 
 
     //long long int hit3PtID = static_cast<long long int>( hit3pT*10E8 );
@@ -377,7 +389,6 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
 
   std::cout << "Unique hits momenta: "   << uniqueHitMomenta.size() << std::endl;
 
-
   // Fill histograms (these probably wont work, since they should be event quantities)  
   plots->nDelphesHits.at(branchCounter)->Fill(numRecoTracksPt0);
   plots->nDelphesHitsPt2.at(branchCounter)->Fill(numRecoTracksPt2);
@@ -385,7 +396,27 @@ void trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
   plots->nRecoTracksMatchedPt2.at(branchCounter)->Fill(numTrueTracksPt2);
   plots->nRecoTracksPt2.at(branchCounter)->Fill(numRecoTracksPt2);
 
+
+  // Store results in a json
+  json output;
+  output["FakeOriginal"]  = { {"Pt0", numFakeTracksPt0},          {"Pt2", numFakeTracksPt2},          {"Pt3", numFakeTracksPt3},          {"Pt5", numFakeTracksPt5} };
+  output["FakeSurviving"] = { {"Pt0", numFakeTracksPt0Surviving}, {"Pt2", numFakeTracksPt2Surviving}, {"Pt3", numFakeTracksPt3Surviving}, {"Pt5", numFakeTracksPt5Surviving} }; 
+
+  // 
+  output["TrueOriginal"]  = { {"Pt0", numTrueTracksPt0},          {"Pt2", numTrueTracksPt2},          {"Pt3", numTrueTracksPt3},          {"Pt5", numTrueTracksPt5} };
+  output["TrueSurviving"] = { {"Pt0", numTrueTracksPt0Surviving}, {"Pt2", numTrueTracksPt2Surviving}, {"Pt3", numTrueTracksPt3Surviving}, {"Pt5", numTrueTracksPt5Surviving} }; 
+
+  // 
+  output["TrueOriginalHit"]  = { {"Pt2", numTrueTracksHitPt2} };
+  output["TrueSurvivingHit"] = { {"Pt2", numTrueTracksHitPt2Surviving} };
+
+  output["FakeOriginalHit"]  = { {"Pt2", numFakeTracksHitPt2} };
+  output["FakeSurvivingHit"] = { {"Pt2", numFakeTracksHitPt2Surviving} };
+
   std::cout << "Finished Loop()\n" << std::endl;
+  return output; 
+
+
 }
 
 # ifndef __CINT__
@@ -393,17 +424,47 @@ int main(int argc, char* argv[]){
 
   TString sampleName = argv[1]; 
   TString outputFile = argv[2];
-  int useBDT         = atoi(argv[3]);
-  if(!(useBDT == 0 || useBDT == 1)){
-    std::cerr << "ERROR: arg3 must be either 0 or 1" << std::endl;
-    std::cout << "You entered: " << useBDT << std::endl;
+
+  int cutsOption     = atoi(argv[3]);
+  int nEventsMax     = atoi(argv[4]);
+
+  float BDTCut        = atof(argv[5]);
+  float deltaKappaCut = atof(argv[6]);
+
+  // print input arguments
+  std::cout << "Input arguments:" << std::endl;
+
+  std::cout << "sampleName: " << sampleName << std::endl;
+  std::cout << "outputFile: " << outputFile << std::endl;
+  std::cout << "cutsOption: " << cutsOption << std::endl;
+  std::cout << "nEventsMax: " << nEventsMax << std::endl;
+  std::cout << "BDTCut: " << BDTCut << std::endl;
+  std::cout << "deltaKappaCut: " << deltaKappaCut << std::endl;
+
+  if(!(cutsOption == 0 || cutsOption == 1 || cutsOption == 2)){
+    std::cerr << "ERROR: arg3 must be 0, 1 or 2" << std::endl;
+    std::cout << "You entered: " << cutsOption << std::endl;
     return 0;
   }
-  if(useBDT){ 
+  if(cutsOption == 0){
+    std::cout << "User selected to use rectangular cuts" << std::endl;
+    std::cout << "deltaKappa cut: " << deltaKappaCut << std::endl;
+  }
+  if(cutsOption == 1){ 
     std::cout << "User selected to use BDT" << std::endl;
+    std::cout << "BDT cut: " << BDTCut << std::endl;
+  }
+  if(cutsOption == 2){
+    std::cout << "You selected both BDT and rectangular cuts" << std::endl;
+    std::cout << "deltaKappa cut: " << deltaKappaCut << std::endl;
+    std::cout << "BDT cut: " << BDTCut << std::endl;
+  }
+
+  if(nEventsMax == -1){
+    std::cout << "Will run over all events" << std::endl;
   }
   else{
-    std::cout << "User selected to use rectangular cuts" << std::endl;
+    std::cout << "Will run over: " << nEventsMax << " events." << std::endl;
   }
 
   ExRootResult *result = new ExRootResult();
@@ -428,23 +489,34 @@ int main(int argc, char* argv[]){
   zresduumCuts["Tracks50"] = 0.3; // 50 mm
 
   std::map<TString, float> zresiduumOverEtaCut;
-  zresduumCuts["Tracks10"] = 0.1; // 10 mm
-  zresduumCuts["Tracks20"] = 0.4; // 20 mm
-  zresduumCuts["Tracks30"] =0.4; // 30 mm
-  zresduumCuts["Tracks40"] =0.4; // 40 mm
-  zresduumCuts["Tracks50"] = 0.4; // 50 mm
+  zresiduumOverEtaCut["Tracks10"] = 0.1; // 10 mm
+  zresiduumOverEtaCut["Tracks20"] = 0.4; // 20 mm
+  zresiduumOverEtaCut["Tracks30"] = 0.4; // 30 mm
+  zresiduumOverEtaCut["Tracks40"] = 0.4; // 40 mm
+  zresiduumOverEtaCut["Tracks50"] = 0.4; // 50 mm
 
+
+  json jStore;
 
   int branchCounter(0);
   for(auto branchName : branchNames){
     trackLoop theLoop(branchName, sampleName);
-    theLoop.Loop(plots, branchCounter, tripletLayouts[branchName], zresduumCuts[branchName], useBDT);
+    json output = theLoop.Loop(plots, branchCounter, tripletLayouts[branchName], zresduumCuts[branchName], cutsOption, nEventsMax, BDTCut, deltaKappaCut);
+
+    jStore[static_cast<std::string>(branchName)] = output;
     branchCounter++;
   }
+
 
   // write  histograms 
   std::cout << "Writing to file: " << outputFile << std::endl;
   result->Write(outputFile);
+
+  // Write a nice json file to store stuff :)
+  TString jFileName = outputFile.ReplaceAll("root", "json");
+  std::cout << "Writing to json file: " << jFileName << std::endl;
+  std::ofstream ojsonfile(jFileName);
+  ojsonfile << std::setw(4) << jStore << std::endl;
 
   // cleanup
   delete plots;
