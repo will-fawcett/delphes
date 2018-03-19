@@ -295,6 +295,9 @@ json trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
       //if(pT > 20.0 && fabs(deltaKappa) > 0.001) continue;
       if(pT > 50.0 && fabs(deltaKappa) > 0.0005) continue;
 
+      // Apply scanned deltaKappa cut
+      if(fabs(deltaKappa) > deltaKappaCut) continue; 
+
 
 
       // Delta-phi constraints
@@ -446,6 +449,7 @@ int main(int argc, char* argv[]){
     std::cout << "You entered: " << cutsOption << std::endl;
     return 0;
   }
+
   if(cutsOption == 0){
     std::cout << "User selected to use rectangular cuts" << std::endl;
     std::cout << "deltaKappa cut: " << deltaKappaCut << std::endl;
