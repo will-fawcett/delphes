@@ -469,7 +469,7 @@ void HitToTrack::Process()
     track->PT = parameters.pT;
     track->Phi = parameters.phi;
     track->Eta = parameters.eta; 
-    track->Charge = parameters.charge;
+    track->Charge = parameters.Charge;
     track->kappa_123 = parameters.kappa_123;
     track->kappa_013 = parameters.kappa_013; 
     track->IsFake = parameters.isFake;
