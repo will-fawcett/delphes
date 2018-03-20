@@ -813,8 +813,10 @@ void TreeWriter::ProcessHit(ExRootTreeBranch *branch, TObjArray *array)
     entry->PID = candidate->PID; 
 
     // derived coordinates (bit expensive but should be OK)  
-    entry->Phi = position.Phi();
-    entry->Eta = position.Eta();
+    //entry->Phi = position.Phi(); // shouldn't need re-calculating (now done in HitFinder)
+    //entry->Eta = position.Eta();
+    entry->Phi = candidate->Phi;
+    entry->Eta = candidate->Eta;
     entry->HitRadius = position.Perp(); 
 
     entry->intPtKeVID = static_cast<int>( candidate->PT*10E6 ); // *10E6 convert GeV to KeV 

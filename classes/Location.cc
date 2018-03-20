@@ -21,6 +21,11 @@ std::string Location::formatLocation(int layerID, int phiBin, int etaBin) const{
   return std::to_string(layerID)+"_"+std::to_string(phiBin)+"_"+std::to_string(etaBin);
 }
 
+// Calculate location string from a Candidate object
+std::string Location::locationFromHit(Candidate* hit) const{
+  return this->locationFromEtaPhi(hit->SurfaceID, hit->Eta, hit->Phi);
+}
+
 // Calculate location string from a Hit object
 std::string Location::locationFromHit(Hit* hit) const{
   return this->locationFromEtaPhi(hit->SurfaceID, hit->Eta, hit->Phi);

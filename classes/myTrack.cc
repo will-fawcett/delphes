@@ -156,7 +156,7 @@ bool myTrack::trackParametersTriplet(){
   float r23 = hypotf( (x3-x2), (y3-y2) );
   m_kappa_123 = 2*chord_123 / (r12 * r13 * r23 ); 
 
-  m_d0 = this->CalculateD0(a_nbc, b_nbc, radius_nbc)
+  m_d0 = this->CalculateD0(a_nbc, b_nbc, radius_nbc);
 
   return true;
 

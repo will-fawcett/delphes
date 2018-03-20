@@ -62,6 +62,7 @@ class Location{
     }
 
     std::string locationFromHit(Hit*) const;
+    std::string locationFromHit(Candidate*) const;
     std::string locationFromEtaPhi(int, float, float) const; 
 
     std::vector<std::string> listOfLocationsInLayer(std::string, int) ;
