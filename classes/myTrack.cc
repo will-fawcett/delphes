@@ -19,6 +19,21 @@ bool myTrack::calculateTrackParameters( cartesianCoordinate coord, trackParamAlg
   return true; 
 }
 
+float myTrack::CalculateD0(float x0, float y0, float radius) const{
+  // D0 calculated with respect to the detector coordinate origin
+  // with track circle parameters (x, y, r)
+  
+  float distanceToOrigin = hypotf(x0, y0);
+
+  // Sign convention
+  // if origin is inside the circle (distanceToOrigin < radius)
+  // d0 will be -ve
+  //
+  // if origin is outside the circle (distanceToOrigin > radius)
+  // d0 will be +vq
+  return distanceToOrigin - radius;
+}
+
 bool myTrack::trackParametersTriplet(){
 
   /****************
@@ -120,7 +135,6 @@ bool myTrack::trackParametersTriplet(){
     m_eta = -100.0;
     return false;
   }
-  m_d0 = 0.0; // by definition (beamline constraint) 
   m_pT = pT;
   m_phi = phi;
   m_kappa_013 = kappa_013; 
@@ -141,6 +155,8 @@ bool myTrack::trackParametersTriplet(){
   float r12 = hypotf( (x2-x1), (y2-y1) );
   float r23 = hypotf( (x3-x2), (y3-y2) );
   m_kappa_123 = 2*chord_123 / (r12 * r13 * r23 ); 
+
+  m_d0 = this->CalculateD0(a_nbc, b_nbc, radius_nbc)
 
   return true;
 

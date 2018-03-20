@@ -120,6 +120,7 @@ class myTrack{
     Hit* GetHitAtLayer(int layerID) const {return m_associatedHits.at(layerID);}
 
     float calculateZresiduum() const;
+    float CalculateD0(float, float, float) const; 
 
     // test if track is a fake track 
     bool isFake() const;

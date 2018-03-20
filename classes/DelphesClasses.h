@@ -623,6 +623,8 @@ public:
   Float_t Phi;
   Float_t ErrorPhi;
 
+  Float_t Eta; // WJF add 
+
   Float_t Xd;
   Float_t Yd;
   Float_t Zd;
