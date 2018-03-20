@@ -70,6 +70,7 @@
 #include "modules/VertexFinder.h"
 #include "modules/VertexTrackAssociator.h"
 #include "modules/HitFinder.h"
+#include "modules/HitToTrack.h"
 #include "modules/VertexFinderDA4D.h"
 #include "modules/PrimaryBinFinder.h"
 #include "modules/ExampleModule.h"
@@ -125,6 +126,7 @@
 #pragma link C++ class VertexFinder+;
 #pragma link C++ class VertexTrackAssociator+;
 #pragma link C++ class HitFinder+;
+#pragma link C++ class HitToTrack+;
 #pragma link C++ class VertexFinderDA4D+;
 #pragma link C++ class PrimaryBinFinder+;
 #pragma link C++ class ExampleModule+;

@@ -9,11 +9,11 @@
 #include <set>
 
 #include "IClassifierReader.h"
-#include "BDTG_depth3_10mm.cpp"
-#include "BDTG_depth3_20mm.cpp"
-#include "BDTG_depth3_30mm.cpp"
-#include "BDTG_depth3_40mm.cpp"
-#include "BDTG_depth3_50mm.cpp"
+#include "BDTG_depth3_10mm.h"
+#include "BDTG_depth3_20mm.h"
+#include "BDTG_depth3_30mm.h"
+#include "BDTG_depth3_40mm.h"
+#include "BDTG_depth3_50mm.h"
 
 #include "json.h"
 #include <fstream>

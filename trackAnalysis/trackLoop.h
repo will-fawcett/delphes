@@ -13,7 +13,7 @@
 #include <TFile.h>
 #include <iostream>
 
-#include "analysis/plotting.cpp"
+#include "analysis/plotting.h"
 #include "json.h"
 
 // Header file for the classes stored in the TTree if any.
