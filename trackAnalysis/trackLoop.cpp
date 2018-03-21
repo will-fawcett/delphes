@@ -53,7 +53,7 @@ inline bool isnt_in_vector(std::vector<T>& theVector, T& item){
 }
 
 inline float calcDeltaPhiLimit(float r1, float r2){
-  float twiceRadius = 1000 * 2 / 1.99; // bending radius [mm] for track of 2 GeV in 4 T magnetic field
+  float twiceRadius = 1000 * 3.3366 * 2 / 4.0;; // bending radius [mm] for track of 2 GeV in 4 T magnetic field (pT[GeV] = 0.3 * B[T] * R[m] ==> R[m] = 3.3366 * pT[GeV]/B[T]
   twiceRadius *= 2; // twice the radius  
   return fabs(acos(r1 / twiceRadius) - acos(r2 / twiceRadius));
 }

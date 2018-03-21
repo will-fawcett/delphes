@@ -208,6 +208,7 @@ void PrimaryBinFinder::Process()
     };
     
 
+    // only ever "pushed back" once, 
     binArray.push_back( std::make_pair( previousMaxPt, maxPtBin) );
 
 

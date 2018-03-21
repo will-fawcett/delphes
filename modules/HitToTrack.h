@@ -29,6 +29,7 @@ struct TrackParameterSet{
    Float_t d0;
    Float_t z0;
    Float_t eta;
+   Float_t theta;
    Float_t phi;
    Float_t kappa_013;
    Float_t kappa_123;

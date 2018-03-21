@@ -60,7 +60,7 @@ void VertexTrackAssociator::Init()
   // - there may be many vertices in the event
   // - the primary vertex will be the one with the largest sumPT, with index 0 (the default) 
   // - any other vertices can be selected with an index > 0, and will have a lower sum(pT) 
-  fNVertexToAssociate = GetInt("NVertexToAssociate", 0);
+  fNVertexToAssociate = GetInt("IndexOfVertexToAssociate", 0);
 
   // Input arrays
   fTrackInputArray = ImportArray(GetString("TrackInputArray", "VertexFinder/tracks"));

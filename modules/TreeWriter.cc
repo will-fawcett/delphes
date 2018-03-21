@@ -400,6 +400,14 @@ void TreeWriter::ProcessTracks(ExRootTreeBranch *branch, TObjArray *array)
 
     entry->VertexIndex = candidate->ClusterIndex;
 
+    // WJF stuff I added
+    entry->IsFake = candidate->IsFake;
+    entry->Eta = candidate->Eta;
+    entry->kappa_013 = candidate->kappa_013;
+    entry->kappa_123 = candidate->kappa_123;
+    entry->P = candidate->P;
+
+
   }
 }
 

@@ -457,6 +457,10 @@ public:
   Float_t ErrorDZ; // track longitudinal impact parameter error
 
   Int_t IsPU; // 0 or 1 for tracks from particles from pile-up interactions (1 for pileup) 
+
+  // WJF extra stuff for tracks 
+  Float_t kappa_013;
+  Float_t kappa_123; 
   Int_t IsFake; // WJF add (is the track a fake track?) 
 
   TRef Particle; // reference to generated particle

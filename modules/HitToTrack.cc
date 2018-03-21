@@ -373,11 +373,15 @@ TrackParameterSet HitToTrack::CalculateTrackParametersTriplet(std::vector<Candid
   trackParameters.d0 = this->CalculateD0(a_nbc, b_nbc, radius_nbc);
   trackParameters.z0 = z0;
   trackParameters.eta = eta; 
+  trackParameters.theta = theta;
   trackParameters.phi = phi;
   trackParameters.kappa_013 = kappa_013;
   trackParameters.kappa_123 = kappa_123;
   trackParameters.isFake = isFake(seeds);
   trackParameters.Charge = sgn(radius);  // use Andre's radius 
+
+  //trackParameters.zresiduum = 
+  //trackParameters.beamlineIntersect = 
 
 
 
@@ -430,6 +434,7 @@ void HitToTrack::Process()
   // Loop over the hits in the event
   // Group hits into layer-eta-phi regions (for faster matching)
   int nHitsEvent(0);
+  int nHitsOuterPt2(0);
   fItInputArray->Reset();
   Candidate* hit; 
   while((hit = static_cast<Candidate*>(fItInputArray->Next())))
@@ -442,9 +447,13 @@ void HitToTrack::Process()
     // Map for layers to hits 
     hitContainer[hit->SurfaceID].push_back(hit); 
 
+    if(hit->SurfaceID == 2){
+      if(hit->PT > 2) nHitsOuterPt2++;
+    }
+
     nHitsEvent++;
   }
-  std::cout << "HitsToTrack::Process(): event has " << nHitsEvent << " hits" << std::endl;
+  std::cout << "HitToTrack::Process(): event has " << nHitsEvent << " hits in total, and " << nHitsOuterPt2 << " in the outermost layer with pT>2 GeV" << std::endl;
 
   // get a list of the unique layer IDs 
   std::vector<int> layerIDs;
@@ -456,14 +465,19 @@ void HitToTrack::Process()
   // Get the seeds 
   std::vector< std::vector<Candidate*> > theSeeds = this->FindSeedsTriplet(hitContainer, hitMap, loc, layerIDs); 
   
-  std::cout << "HitsToTrack::Process(): event has " << theSeeds.size() << " sets of seeds" << std::endl;
+  std::cout << "HitToTrack::Process(): event has " << theSeeds.size() << " sets of seeds" << std::endl;
 
   // Reconstruct the seeds into tracks, apply tighter constraints on the track selection
   for(auto& seeds : theSeeds){
+
+    // Calculate track parameters 
     TrackParameterSet parameters = this->CalculateTrackParametersTriplet(seeds);
 
-    // create a new (track) candidate using the outermost hit, assign track parameters 
+    // Create a new (track) candidate using the outermost hit, 
+    // Use the outermost hit so the Xd and L variables are set correctly 
     Candidate* track = static_cast<Candidate*>(seeds.back()->Clone());
+
+    // Assign track parameters 
     track->D0 = parameters.d0;  
     track->DZ = parameters.z0;
     track->PT = parameters.pT;
@@ -473,6 +487,20 @@ void HitToTrack::Process()
     track->kappa_123 = parameters.kappa_123;
     track->kappa_013 = parameters.kappa_013; 
     track->IsFake = parameters.isFake;
+
+    TLorentzVector momentum;
+    float pion_mass = 139.570 / 1000; // GeV 
+    momentum.SetPtEtaPhiM(parameters.pT, parameters.eta, parameters.phi, pion_mass);
+    track->P = momentum.P();
+    track->Momentum = momentum; 
+    track->CtgTheta = 1.0/tan( parameters.theta ); 
+
+    // Add the other seeds to the track
+    for(auto& seed : seeds){
+      track->AddCandidate(seed);
+    }
+
+    fTrackOutputArray->Add(track); 
 
 
   }
