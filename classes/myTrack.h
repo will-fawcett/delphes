@@ -87,7 +87,7 @@ class myTrack{
       coordinate.y = 0.0;
       coordinate.z = 0.0;
       m_initialised = calculateTrackParameters(coordinate, triplet); 
-      return m_initialised
+      return m_initialised;
     }
 
     // Calculate track parameters relative to the detector origin, using a specified algorithm

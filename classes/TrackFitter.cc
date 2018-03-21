@@ -706,6 +706,7 @@ bool TrackFitter::combineHitsToTracksInToOut(){
       m_tracks.push_back(aTrack); // add to collection of tracks 
     }
   }
+  return true;
 }
 
 
