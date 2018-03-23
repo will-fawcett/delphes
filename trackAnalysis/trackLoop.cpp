@@ -72,6 +72,11 @@ json trackLoop::Loop(Plots* plots, int branchCounter, std::vector<float> triplet
   float deltaPhi12Limit = calcDeltaPhiLimit(tripletLayers.at(0), tripletLayers.at(1));
   float deltaPhi23Limit = calcDeltaPhiLimit(tripletLayers.at(1), tripletLayers.at(2));
   float deltaPhi13Limit = calcDeltaPhiLimit(tripletLayers.at(0), tripletLayers.at(2));
+  std::cout << "DeltaPhi:" << std::endl;
+  std::cout << "12: " << deltaPhi12Limit << std::endl;
+  std::cout << "23: " << deltaPhi23Limit << std::endl;
+  std::cout << "13: " << deltaPhi13Limit << std::endl;
+
 
   if (fChain == 0){
     json empty; // hack

@@ -453,7 +453,7 @@ void HitToTrack::Process()
 
     nHitsEvent++;
   }
-  std::cout << "HitToTrack::Process(): event has " << nHitsEvent << " hits in total, and " << nHitsOuterPt2 << " in the outermost layer with pT>2 GeV" << std::endl;
+  if(m_debug) std::cout << "HitToTrack::Process(): event has " << nHitsEvent << " hits in total, and " << nHitsOuterPt2 << " in the outermost layer with pT>2 GeV" << std::endl;
 
   // get a list of the unique layer IDs 
   std::vector<int> layerIDs;
@@ -465,7 +465,7 @@ void HitToTrack::Process()
   // Get the seeds 
   std::vector< std::vector<Candidate*> > theSeeds = this->FindSeedsTriplet(hitContainer, hitMap, loc, layerIDs); 
   
-  std::cout << "HitToTrack::Process(): event has " << theSeeds.size() << " sets of seeds" << std::endl;
+  if(m_debug) std::cout << "HitToTrack::Process(): event has " << theSeeds.size() << " sets of seeds" << std::endl;
 
   // Reconstruct the seeds into tracks, apply tighter constraints on the track selection
   for(auto& seeds : theSeeds){
@@ -488,12 +488,18 @@ void HitToTrack::Process()
     track->kappa_013 = parameters.kappa_013; 
     track->IsFake = parameters.isFake;
 
+    // Set track momentum TLV
     TLorentzVector momentum;
     float pion_mass = 139.570 / 1000; // GeV 
     momentum.SetPtEtaPhiM(parameters.pT, parameters.eta, parameters.phi, pion_mass);
     track->P = momentum.P();
     track->Momentum = momentum; 
     track->CtgTheta = 1.0/tan( parameters.theta ); 
+
+    // Set track position TLV
+    track->Position = momentum; // might not make sense to set position = momemtum, but track position doesn't really mean anything. Would want the correct Eta and Phi coordinates if this was called, though
+
+    
 
     // Add the other seeds to the track
     for(auto& seed : seeds){

@@ -76,6 +76,13 @@ Bool_t ExRootTreeReader::ReadEntry(Long64_t entry)
 
 //------------------------------------------------------------------------------
 
+// WJF: Fucking ROOT and const char*
+TClonesArray *ExRootTreeReader::UseBranch(std::string branchNameStr){
+  this->UseBranch(branchNameStr.c_str());
+}
+
+//------------------------------------------------------------------------------
+
 TClonesArray *ExRootTreeReader::UseBranch(const char *branchName)
 {
   TClonesArray *array = 0;

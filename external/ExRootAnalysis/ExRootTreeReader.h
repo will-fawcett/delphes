@@ -29,6 +29,7 @@ public :
   Bool_t ReadEntry(Long64_t entry);
 
   TClonesArray *UseBranch(const char *branchName);
+  TClonesArray *UseBranch(std::string branchName);
 
 private:
 

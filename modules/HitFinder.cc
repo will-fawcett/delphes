@@ -426,7 +426,7 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
         candidate->Xd = xd*1.0E3;
         candidate->Yd = yd*1.0E3;
         candidate->Zd = zd*1.0E3;
-        candidate->AddCandidate(mother);
+        
 
         // add surface ID to hit
         candidate->SurfaceID = SurfaceID; 
@@ -435,18 +435,19 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
         candidate->Eta = candidate->Position.Eta();
         candidate->Phi = candidate->Position.Phi();
 
+        candidate->AddCandidate(mother);
 
         // Add candidate to output array  
         fHitOutputArray->Add(candidate);
 
-        hitCounter++;
+        if(m_debug) hitCounter++;
 
 
 
       }
     }
   } // end loop over candidates
-  std::cout << "HitFinder::Process(): " << hitCounter << " hits were found in layer " << SurfaceID << std::endl;
+  if(m_debug) std::cout << "HitFinder::Process(): " << hitCounter << " hits were found in layer " << SurfaceID << std::endl;
 
 }
 

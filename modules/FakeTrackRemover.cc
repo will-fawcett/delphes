@@ -21,6 +21,13 @@
 #include <iostream>
 #include <string>
 
+void printHit(Candidate* hit){
+  TLorentzVector pos = hit->Position;
+  std::cout << "candidate Position: r: " << pos.Perp() << " x: " << pos.X() << " y: " << pos.Y() << " z: " << pos.Z() << std::endl;
+  std::cout << "Xd: " << hit->Xd << " Yd: " << hit->Yd << " Zd: " << hit->Zd << std::endl;
+  std::cout << "SurfaceID " << hit->SurfaceID << std::endl;
+}
+
 
 inline float calcDeltaPhiLimit(float r1, float r2){
   // Input arguments:
@@ -65,12 +72,17 @@ void FakeTrackRemover::Init()
 {
 
   // debug 
-  m_debug = true;
+  m_debug = false;
 
   // calculate deltaphi limits (note, input units are [mm])
-  m_deltaPhi12Limit = calcDeltaPhiLimit(552, 582); 
-  m_deltaPhi23Limit = calcDeltaPhiLimit(582, 612);
-  m_deltaPhi13Limit = calcDeltaPhiLimit(552, 612);
+  m_deltaPhi12Limit = calcDeltaPhiLimit(552.0, 582.0);
+  m_deltaPhi23Limit = calcDeltaPhiLimit(582.0, 612.0);
+  m_deltaPhi13Limit = calcDeltaPhiLimit(552.0, 612.0); 
+
+  // "should be" 
+  //12: 0.00912392
+  //23: 0.0091387
+  //13: 0.0182626
 
   fTrackInputArray = ImportArray(GetString("TrackInputArray", "HitToTrack/tracks"));
   fItTrackInputArray = fTrackInputArray->MakeIterator();
@@ -97,7 +109,9 @@ void FakeTrackRemover::Process()
   
   // debug 
   int nTracksOriginal(0);
+  int nTracksOriginalPt2(0);
   int nTracksSurviving(0);
+  int nTracksSurvivingPt2(0);
   int nFakeOriginal(0);
   int nFakeSurviving(0);
   
@@ -113,10 +127,9 @@ void FakeTrackRemover::Process()
     // debug
     if(m_debug){
       nTracksOriginal++;
+      if(track->PT > 2) nTracksOriginalPt2++;
       if(track->IsFake) nFakeOriginal++;
     }
-    
-
     
     // some deltaKappa cuts
     if(pT > 0 && fabs(deltaKappa)    > 0.003) continue;
@@ -127,23 +140,21 @@ void FakeTrackRemover::Process()
 
     // get hits
     auto hits = track->GetCandidates();
-    Candidate* hit1 = static_cast<Candidate*>(hits->At(0));
-    Candidate* hit2 = static_cast<Candidate*>(hits->At(1));
-    Candidate* hit3 = static_cast<Candidate*>(hits->At(2));
+    //std::cout << "This track has " << hits->GetEntries() << " candidates" << std::endl; 
+    Candidate* hit1 = static_cast<Candidate*>(hits->At(1));
+    Candidate* hit2 = static_cast<Candidate*>(hits->At(2));
+    Candidate* hit3 = static_cast<Candidate*>(hits->At(3));
 
     // Delta-phi constraints
     float deltaPhi12 = fabs(hit1->Phi - hit2->Phi);
     float deltaPhi23 = fabs(hit2->Phi - hit3->Phi);
     float deltaPhi13 = fabs(hit1->Phi - hit3->Phi);
 
-    std::cout << "dphi12 " <<deltaPhi12 << " limit: " <<  m_deltaPhi12Limit << std::endl;
-    std::cout << "dphi23 " <<deltaPhi23 << " limit: " <<  m_deltaPhi23Limit << std::endl;
-    std::cout << "dphi13 " <<deltaPhi13 << " limit: " <<  m_deltaPhi13Limit << std::endl;
-
+    // WJF: remove delta phi ... somehow failing? Maybe problem with Phi calculation?? 
     if(deltaPhi12 > m_deltaPhi12Limit) continue;
     if(deltaPhi23 > m_deltaPhi23Limit) continue;
     if(deltaPhi13 > m_deltaPhi13Limit) continue;
-    std::cout << "survive delta phi" << std::endl; 
+
 
     // recalcualte zresiduum (could add this calculation to HitToTrack::CalculateTrackParametersTriplet ), and add it to the track class?  
     LineParameters params;
@@ -168,22 +179,19 @@ void FakeTrackRemover::Process()
     // z residuum 
     const float zresiduumCut = 0.1; 
     if(fabs(zresiduum) > zresiduumCut) continue; 
-    std::cout << "z residuum" << std::endl; 
 
     // z residuum over eta (extra information)
     if(fabs( zresiduum/fabs(track->Eta) ) > 0.4) continue; 
-    std::cout << "z residuum/eta" << std::endl; 
 
     // Phi constraint, such that the differences in phi angles are in the same sense when moving from one tracking layer to the next
     if(z_12m23 < 0) continue;
-    std::cout << "phi direction" << std::endl; 
 
     // beamline intersect
     if(fabs(beamlineIntersect) > 200) continue; 
-    std::cout << "beamline intersect" << std::endl; 
 
     if(m_debug){
       nTracksSurviving++;
+      if(track->PT > 2) nTracksSurvivingPt2++;
       if(track->IsFake) nFakeSurviving++;
     }
 
@@ -191,10 +199,14 @@ void FakeTrackRemover::Process()
 
   }
 
-  std::cout << "FakeTrackRemover::Process(): nTracksOriginal: " << nTracksOriginal << std::endl;
-  std::cout << "FakeTrackRemover::Process(): nTracksSurviving: " << nTracksSurviving << std::endl;
-  std::cout << "FakeTrackRemover::Process(): nFakeOriginal: " << nFakeOriginal << std::endl;
-  std::cout << "FakeTrackRemover::Process(): nFakeSurviving: " << nFakeSurviving << std::endl;
+  if(m_debug){
+    std::cout << "FakeTrackRemover::Process(): nTracksOriginal: " << nTracksOriginal << std::endl;
+    std::cout << "FakeTrackRemover::Process(): nTracksOriginalPt2: " << nTracksOriginalPt2 << std::endl;
+    std::cout << "FakeTrackRemover::Process(): nTracksSurviving: " << nTracksSurviving << std::endl;
+    std::cout << "FakeTrackRemover::Process(): nTracksSurvivingPt2: " << nTracksSurvivingPt2 << std::endl;
+    std::cout << "FakeTrackRemover::Process(): nFakeOriginal: " << nFakeOriginal << std::endl;
+    std::cout << "FakeTrackRemover::Process(): nFakeSurviving: " << nFakeSurviving << std::endl;
+  }
 
 
 
