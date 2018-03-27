@@ -22,7 +22,6 @@
 // testing
 #include <ctime>
 
-using namespace std;
 
 // sign: god knows why this isn't a standard function!
   template <typename T> int sgn(T val) {
