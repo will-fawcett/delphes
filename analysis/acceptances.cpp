@@ -249,7 +249,11 @@ void AnalyseEvents(const int nEvents, bool hasPileup, ExRootTreeReader *treeRead
       std::sort( sortedTracks.begin(), sortedTracks.end(), reverseTrack);
       if(m_debug) std::cout << "\tExtracted tracks and sorted" << std::endl;
 
+
       // Loop over the sorted tracks 
+      std::vector<Track*> leptons;
+      std::vector<Track*> electrons;
+      std::vector<Track*> muons;
       for(int iTrack=0; iTrack<nTracks; ++iTrack){
         Track* track = sortedTracks.at(iTrack); // ok to leave as Track*  
         if(iTrack == 0) plots->track1Pt.at(iBranch)->Fill(track->PT, eventWeight);
@@ -270,18 +274,45 @@ void AnalyseEvents(const int nEvents, bool hasPileup, ExRootTreeReader *treeRead
         // Note: particle = static_cast<Candidate*>(candidate->GetCandidates()->At(0)); // this is "particle" 
         if(!hasPileup){
           GenParticle* particle = static_cast<GenParticle*>(track->Particle.GetObject());
-          pid = particle->PID;
+          int pid = particle->PID;
           double ptRes = track->PT - particle->PT;  
           double z0Res = track->DZ - particle->DZ;
           double d0Res = track->D0 - particle->D0;
           double etaRes = track->Eta - particle->Eta; 
           double cotThetaRes = track->CtgTheta - particle->CtgTheta; 
           double phiRes = track->Phi - particle->Phi;
+
+          if(abs(pid) == 11 || abs(pid) == 13){ // lepton
+            leptons.push_back(track);
+            //plots->lepton1Pt
+            if( abs(pid) == 11 ){ // electron
+              electrons.push_back(track);
+            }
+            if( abs(pid) == 13 ) { // muon
+              muons.push_back(track);
+            }
+          }
         }
+      } // end loop over tracks
 
-
-        //std::cout << "particlePt: " << particle->PT << "\ttrackpT: " << track->PT << "\tresolution: " << ptRes << std::endl;
+      // fill plots for leptons 
+      for(int iLep=0; iLep < leptons.size(); ++iLep){
+        Track* lepton = leptons.at(iLep);
+        if(iLep == 0) plots->lepton1Pt.at(iBranch)->Fill( lepton->PT );
+        if(iLep == 1) plots->lepton2Pt.at(iBranch)->Fill( lepton->PT );
       }
+      for(int iEle=0; iEle < electrons.size(); ++iEle){
+        Track* electron = electrons.at(iEle);
+        if(iEle == 0) plots->electron1Pt.at(iBranch)->Fill( electron->PT );
+        if(iEle == 1) plots->electron2Pt.at(iBranch)->Fill( electron->PT );
+      }
+      for(int iMuon=0; iMuon < muons.size(); ++iMuon){
+        Track* muon = muons.at(iMuon);
+        if(iMuon == 0) plots->muon1Pt.at(iBranch)->Fill( muon->PT );
+        if(iMuon == 1) plots->muon2Pt.at(iBranch)->Fill( muon->PT );
+      }
+
+
     } // end loop over track branches
     
 
