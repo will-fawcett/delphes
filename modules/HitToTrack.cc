@@ -58,7 +58,7 @@ HitToTrack::~HitToTrack()
 void HitToTrack::Init()
 {
 
-  m_debug=false;
+  m_debug = GetBool("debug", false); 
 
   if(m_debug) std::cout << "HitToTrack::Init()" << std::endl;
 
@@ -420,7 +420,7 @@ bool HitToTrack::isFake(std::vector<Candidate*>& seeds) const{
 void HitToTrack::Process()
 {
 
-  if(m_debug) std::cout << "Process()" << std::endl;
+  if(m_debug) std::cout << "HitToTrack::Process()" << std::endl;
 
 
   // Define a location object, that defines the size of the eta and phi windows used for seeding 
@@ -455,62 +455,63 @@ void HitToTrack::Process()
   }
   if(m_debug) std::cout << "HitToTrack::Process(): event has " << nHitsEvent << " hits in total, and " << nHitsOuterPt2 << " in the outermost layer with pT>2 GeV" << std::endl;
 
-  // get a list of the unique layer IDs 
-  std::vector<int> layerIDs;
-  for(const auto& id : hitContainer){
-    layerIDs.push_back(id.first);
-  }
-  std::sort(layerIDs.begin(), layerIDs.end()); // sort into ascending order
 
-  // Get the seeds 
-  std::vector< std::vector<Candidate*> > theSeeds = this->FindSeedsTriplet(hitContainer, hitMap, loc, layerIDs); 
-  
-  if(m_debug) std::cout << "HitToTrack::Process(): event has " << theSeeds.size() << " sets of seeds" << std::endl;
+  // Only continue if there is at least 1 hit in the event
+  if(nHitsEvent > 0){
 
-  // Reconstruct the seeds into tracks, apply tighter constraints on the track selection
-  for(auto& seeds : theSeeds){
-
-    // Calculate track parameters 
-    TrackParameterSet parameters = this->CalculateTrackParametersTriplet(seeds);
-
-    // Create a new (track) candidate using the outermost hit, 
-    // Use the outermost hit so the Xd and L variables are set correctly 
-    Candidate* track = static_cast<Candidate*>(seeds.back()->Clone());
-
-    // Assign track parameters 
-    track->D0 = parameters.d0;  
-    track->DZ = parameters.z0;
-    track->PT = parameters.pT;
-    track->Phi = parameters.phi;
-    track->Eta = parameters.eta; 
-    track->Charge = parameters.Charge;
-    track->kappa_123 = parameters.kappa_123;
-    track->kappa_013 = parameters.kappa_013; 
-    track->IsFake = parameters.isFake;
-
-    // Set track momentum TLV
-    TLorentzVector momentum;
-    float pion_mass = 139.570 / 1000; // GeV 
-    momentum.SetPtEtaPhiM(parameters.pT, parameters.eta, parameters.phi, pion_mass);
-    track->P = momentum.P();
-    track->Momentum = momentum; 
-    track->CtgTheta = 1.0/tan( parameters.theta ); 
-
-    // Set track position TLV
-    track->Position = momentum; // might not make sense to set position = momemtum, but track position doesn't really mean anything. Would want the correct Eta and Phi coordinates if this was called, though
-
-    
-
-    // Add the other seeds to the track
-    for(auto& seed : seeds){
-      track->AddCandidate(seed);
+    // get a list of the unique layer IDs 
+    std::vector<int> layerIDs;
+    for(const auto& id : hitContainer){
+      layerIDs.push_back(id.first);
     }
+    std::sort(layerIDs.begin(), layerIDs.end()); // sort into ascending order
 
-    fTrackOutputArray->Add(track); 
+    // Get the seeds 
+    std::vector< std::vector<Candidate*> > theSeeds = this->FindSeedsTriplet(hitContainer, hitMap, loc, layerIDs); 
+    
+    if(m_debug) std::cout << "HitToTrack::Process(): event has " << theSeeds.size() << " sets of seeds" << std::endl;
+
+    // Reconstruct the seeds into tracks, apply tighter constraints on the track selection
+    for(auto& seeds : theSeeds){
+
+      // Calculate track parameters 
+      TrackParameterSet parameters = this->CalculateTrackParametersTriplet(seeds);
+
+      // Create a new (track) candidate using the outermost hit, 
+      // Use the outermost hit so the Xd and L variables are set correctly 
+      Candidate* track = static_cast<Candidate*>(seeds.back()->Clone());
+
+      // Assign track parameters 
+      track->D0 = parameters.d0;  
+      track->DZ = parameters.z0;
+      track->PT = parameters.pT;
+      track->Phi = parameters.phi;
+      track->Eta = parameters.eta; 
+      track->Charge = parameters.Charge;
+      track->kappa_123 = parameters.kappa_123;
+      track->kappa_013 = parameters.kappa_013; 
+      track->IsFake = parameters.isFake;
+
+      // Set track momentum TLV
+      TLorentzVector momentum;
+      float pion_mass = 139.570 / 1000; // GeV 
+      momentum.SetPtEtaPhiM(parameters.pT, parameters.eta, parameters.phi, pion_mass);
+      track->P = momentum.P();
+      track->Momentum = momentum; 
+      track->CtgTheta = 1.0/tan( parameters.theta ); 
+
+      // Set track position TLV
+      track->Position = momentum; // might not make sense to set position = momemtum, but track position doesn't really mean anything. Would want the correct Eta and Phi coordinates if this was called, though
 
 
-  }
-   
-}
+      // Add the other seeds to the track
+      for(auto& seed : seeds){
+        track->AddCandidate(seed);
+      }
+      fTrackOutputArray->Add(track); 
+
+    } // end of loop over seeds
+  } // end of if(hasHits)
+} // end of Process()
 
 //------------------------------------------------------------------------------

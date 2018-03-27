@@ -47,6 +47,8 @@ public:
 
 private:
 
+  bool m_debug;
+
   Int_t fSearchAlgorithm;
   
   Int_t fBinWidth;

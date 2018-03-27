@@ -56,6 +56,8 @@ VertexTrackAssociator::~VertexTrackAssociator()
 void VertexTrackAssociator::Init()
 {
 
+  m_debug = GetBool("debug", false);
+
   // This module will only associate tracks to a given vertex
   // - there may be many vertices in the event
   // - the primary vertex will be the one with the largest sumPT, with index 0 (the default) 

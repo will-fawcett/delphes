@@ -67,7 +67,7 @@ HitFinder::~HitFinder()
 void HitFinder::Init()
 {
 
-  m_debug=false;
+  m_debug = GetBool("debug", false); 
 
   if(m_debug) std::cout << "HitFinder::Init()" << std::endl;
 
@@ -138,7 +138,7 @@ void HitFinder::ParticlePropagator(float RADIUS_MAX, float HalfLengthMax, int Su
 
   int hitCounter(0);
 
-  if(m_debug) std::cout << "ParticlePropagator()" << std::endl;
+  if(m_debug) std::cout << "HitFinder::ParticlePropagator()" << std::endl;
 
   Candidate *candidate, *mother;
   TLorentzVector candidatePosition, candidateMomentum, beamSpotPosition;

@@ -15,6 +15,9 @@
 #include <exception>
 #include <map>
 #include <ctime>
+#include <sys/stat.h>
+#include <getopt.h> // argument parsing! 
+#include <glob.h> 
 
 // stuff for ROOT
 #include "TROOT.h"
@@ -27,13 +30,46 @@
 #include "TClonesArray.h"
 #include "TNamed.h"
 
+// global N_JETS
+int N_JETS = 6; 
+bool m_debug = false;
 
+//------------------------------------------------------------------------------
 
+// Fast way to test if a file exists
+inline bool fileExists (const std::string& name) {
+  struct stat buffer;
+  return (stat (name.c_str(), &buffer) == 0);
+}
 
+//------------------------------------------------------------------------------
 
 // Rule for sorting vector of Track* objects 
-bool reverse(const Track* i, const Track* j){
+bool reverseTrack(const Track* i, const Track* j){
   return i->PT > j->PT; 
+}
+
+// Rule for sorting vector of Jet* objects 
+bool reverseJet(const Jet* i, const Jet* j){
+  return i->PT > j->PT; 
+}
+
+// Rule for sorting vector of Candidate* objects
+bool reverseCandidate(const Candidate* i, const Candidate* j){
+  return i->PT > j->PT; 
+}
+
+//------------------------------------------------------------------------------
+// a simple glob https://stackoverflow.com/questions/8401777/simple-glob-in-c-on-unix-system
+inline std::vector<std::string> glob(const std::string& pat){
+    glob_t glob_result;
+    glob(pat.c_str(),GLOB_TILDE,NULL,&glob_result);
+    std::vector<std::string> ret;
+    for(unsigned int i=0;i<glob_result.gl_pathc;++i){
+        ret.push_back(std::string(glob_result.gl_pathv[i]));
+    }
+    globfree(&glob_result);
+    return ret;
 }
 
 //------------------------------------------------------------------------------
@@ -45,63 +81,137 @@ void printTime(clock_t begin, clock_t end, std::string message){
 //------------------------------------------------------------------------------
 
 struct Plots {
+
+  std::vector<TH1*> fakeTrackPt;
+  std::vector<TH1*> trueTrackPt;
+  std::vector<TH1*> allTrackPt;
+
+  std::vector<TH1*> electron1Pt;
+  std::vector<TH1*> electron2Pt;
+  std::vector<TH1*> lepton1Pt;
+  std::vector<TH1*> lepton2Pt;
+  std::vector<TH1*> muon1Pt;
+  std::vector<TH1*> muon2Pt;
+
   std::vector<TH1*> track1Pt; 
   std::vector<TH1*> track2Pt; 
   std::vector<TH1*> track3Pt; 
   std::vector<TH1*> track4Pt; 
 
+  std::vector<std::vector<TH1*>> jetiPt;
+
 };
 
+//------------------------------------------------------------------------------
 
-void BookHistograms(ExRootResult *result, Plots *plots, std::vector<std::string> branchNames)
+void BookHistograms(ExRootResult *result, Plots *plots, std::vector<std::string> trackBranchNames, std::vector<std::string> jetBranchNames)
 {
 
+
+
   // one of each type of histogram for each branchname 
-  for(int i=0; i<branchNames.size(); ++i){
+  for(int i=0; i<trackBranchNames.size(); ++i){
 
-    std::string branch = branchNames.at(i);
+    std::string branch = trackBranchNames.at(i);
 
+    // Fake and true tracks
+    plots->fakeTrackPt.push_back(
+        result->AddHist1D(branch+"_fakeTrackPt", "", "", "", 1000, 0, 1000, 0, 0)
+        );
+    plots->trueTrackPt.push_back(
+        result->AddHist1D(branch+"_trueTrackPt", "", "", "", 1000, 0, 1000, 0, 0)
+        );
+    plots->allTrackPt.push_back(
+        result->AddHist1D(branch+"_allTrackPt", "", "", "", 1000, 0, 1000, 0, 0)
+        );
+
+    // Nth track pT
     plots->track1Pt.push_back(
-        result->AddHist1D( branch+"track1Pt", "", "", "", 1000, 0, 1000, 0, 0)  
+        result->AddHist1D( branch+"_track1Pt", "", "", "", 1000, 0, 1000, 0, 0)  
         );
     plots->track2Pt.push_back(
-        result->AddHist1D( branch+"track2Pt", "", "", "", 1000, 0, 1000, 0, 0)  
+        result->AddHist1D( branch+"_track2Pt", "", "", "", 1000, 0, 1000, 0, 0)  
         );
     plots->track3Pt.push_back(
-        result->AddHist1D( branch+"track3Pt", "", "", "", 1000, 0, 1000, 0, 0)  
+        result->AddHist1D( branch+"_track3Pt", "", "", "", 1000, 0, 1000, 0, 0)  
         );
     plots->track4Pt.push_back(
-        result->AddHist1D( branch+"track4Pt", "", "", "", 1000, 0, 1000, 0, 0)  
+        result->AddHist1D( branch+"_track4Pt", "", "", "", 1000, 0, 1000, 0, 0)  
         );
 
-  }
+    // Lepton pT
+    plots->electron1Pt.push_back(
+        result->AddHist1D(branch+"_electron1Pt", "", "", "", 1000, 0, 1000, 0, 0)
+        );
+    plots->electron2Pt.push_back(
+        result->AddHist1D(branch+"_electron2Pt", "", "", "", 1000, 0, 1000, 0, 0)
+        );
+    plots->muon1Pt.push_back(
+        result->AddHist1D(branch+"_muon1Pt", "", "", "", 1000, 0, 1000, 0, 0)
+        );
+    plots->muon2Pt.push_back(
+        result->AddHist1D(branch+"_muon2Pt", "", "", "", 1000, 0, 1000, 0, 0)
+        );
+    plots->lepton1Pt.push_back(
+        result->AddHist1D(branch+"_lepton1Pt", "", "", "", 1000, 0, 1000, 0, 0)
+        );
+    plots->lepton2Pt.push_back(
+        result->AddHist1D(branch+"_lepton2Pt", "", "", "", 1000, 0, 1000, 0, 0)
+        );
+
+
+  } // end loop over track branch names
+  
+
+  for(int i=0; i<jetBranchNames.size();++i){
+    // one histogram for jet multiplicity
+    std::string branch = jetBranchNames.at(i);
+    std::vector<TH1*> tempVec;
+    for(int j=0; j<N_JETS; ++j){
+      std::string jetMulti = std::to_string(j+1);
+      tempVec.push_back(
+          result->AddHist1D( branch+"_jet"+jetMulti+"Pt", "", "", "", 1000, 0, 1000, 0, 0)
+          );
+    }
+    plots->jetiPt.push_back(tempVec);
+  } // end loop over jet branch names
+
+  std::cout << "End BookHistograms" << std::endl;
+
 }
 
 //------------------------------------------------------------------------------
 
-void AnalyseEvents(const int nEvents, ExRootTreeReader *treeReader, Plots *plots, std::vector<std::string> branchNames)
+void AnalyseEvents(const int nEvents, bool hasPileup, ExRootTreeReader *treeReader, Plots *plots, std::vector<std::string> trackBranchNames, std::vector<std::string> jetBranchNames)
 {
 
+  ///////////////////////////
+  // Define branches
+  ///////////////////////////
 
-  std::vector<TClonesArray*> branches;
-  for(const auto& bName : branchNames){
-    branches.push_back( treeReader->UseBranch(bName) );
+  if(m_debug) std::cout << "AnalyseEvents()" << std::endl;
+  if(m_debug) std::cout << "Extracting branches" << std::endl;
+
+  TClonesArray *branchParticle   = treeReader->UseBranch("Particle");
+
+  // Initialise track branches
+  std::vector<TClonesArray*> trackBranches;
+  for(const auto& bName : trackBranchNames){
+    trackBranches.push_back( treeReader->UseBranch(bName) );
   }
 
-  // Define branches
-  TClonesArray *branchParticle   = treeReader->UseBranch("Particle");
-  //TClonesArray *branchTruthTrack = treeReader->UseBranch("TruthTrack");
-  //TClonesArray *branchTrack      = treeReader->UseBranch("Track");
-
-  //TClonesArray* branchTracksFromHit30 = treeReader->UseBranch("TracksFromHit30");
-  //TClonesArray* branchPBMatchedHitTracks = treeReader->UseBranch("PBMatchedHitTracks");
-  //TClonesArray* branchSmearedTracksFromHits = treeReader->UseBranch("SmearedTracksFromHits");
-
-  
+  // Initialise jet branches
+  std::vector<TClonesArray*> jetBranches;
+  for(const auto& bName : jetBranchNames){
+    jetBranches.push_back( treeReader->UseBranch(bName) );
+  }
 
 
 
+  ///////////////////////
   // Loop over all events
+  ///////////////////////
+  
   Long64_t allEntries = treeReader->GetEntries();
   std::cout << "** Chain contains " << allEntries << " events" << std::endl;
   float eventWeight = 1.0/allEntries; // an event weight for normalising histograms
@@ -117,86 +227,90 @@ void AnalyseEvents(const int nEvents, ExRootTreeReader *treeReader, Plots *plots
     treeReader->ReadEntry(entry);
     // print every 10% complete
     if( entry % int(allEntries/10)==0 ) std::cout << "Event " << entry << " out of " << allEntries << std::endl;
-    if( entry % 100==0 ) std::cout << "Event " << entry << " out of " << allEntries << std::endl;
-
-    /**************
-    int pCounter(0);
-    std::vector<float> particlePts; 
-    particlePts.reserve(1000);
-    for(auto itParticle=branchParticle->begin(); itParticle != branchParticle->end(); ++itParticle){
-      GenParticle* particle = dynamic_cast<GenParticle*>(*itParticle);
-      if(particle->Status == 1){
-        std::cout << "p" << pCounter << " " << particle->PT << std::endl;
-        particlePts.push_back(particle->PT);
-        pCounter++;
-      }
-    }
-    std::cout << "" << std::endl;
-
-    std::sort(particlePts.rbegin(), particlePts.rend());
-    for(auto pt : particlePts){
-      std::cout << pt << std::endl;
-    }
-    std::cout << "" << std::endl;
-    continue;
-    ***********/
+    if( entry % 100==0 ) std::cout << "Event " << entry << " out of " << allEntries << std::endl; // print every 100 events
 
 
-    for(int iBranch=0; iBranch<branchNames.size(); ++iBranch){
-      TClonesArray* branch = branches.at(iBranch);
-
-      //std::cout << "branch: " << branchNames.at(iBranch) << std::endl;
+    ////////////////////////////////////////
+    // Loop over the different track branches
+    ////////////////////////////////////////
+    
+    if(m_debug) std::cout << "Being track loop" << std::endl;
+    for(int iBranch=0; iBranch<trackBranchNames.size(); ++iBranch){
+      TClonesArray* branch = trackBranches.at(iBranch);
 
       // Store the tracks, and sort into descending pT order
       int nTracks = branch->GetEntriesFast(); 
       std::vector<Track*> sortedTracks; 
       sortedTracks.reserve(nTracks);
       for(int iTrack=0; iTrack<nTracks; ++iTrack){
-        Track* track = (Track*) branch->At(iTrack);
+        Track* track = static_cast<Track*>( branch->At(iTrack) ); 
         sortedTracks.push_back(track);
       }
-      std::sort( sortedTracks.begin(), sortedTracks.end(), reverse);
+      std::sort( sortedTracks.begin(), sortedTracks.end(), reverseTrack);
+      if(m_debug) std::cout << "\tExtracted tracks and sorted" << std::endl;
 
       // Loop over the sorted tracks 
       for(int iTrack=0; iTrack<nTracks; ++iTrack){
-        Track* track = sortedTracks.at(iTrack);
+        Track* track = sortedTracks.at(iTrack); // ok to leave as Track*  
         if(iTrack == 0) plots->track1Pt.at(iBranch)->Fill(track->PT, eventWeight);
         if(iTrack == 1) plots->track2Pt.at(iBranch)->Fill(track->PT, eventWeight);
         if(iTrack == 2) plots->track3Pt.at(iBranch)->Fill(track->PT, eventWeight);
         if(iTrack == 3) plots->track4Pt.at(iBranch)->Fill(track->PT, eventWeight);
+
+        plots->allTrackPt.at(iBranch)->Fill(track->PT, eventWeight);
+        if(track->IsFake == 1){
+          plots->fakeTrackPt.at(iBranch)->Fill(track->PT, eventWeight);
+        }
+        else{
+          plots->trueTrackPt.at(iBranch)->Fill(track->PT, eventWeight);
+        }
+
+        // calculate resolutions
+        // Some of the might not make sense physically
+        // Note: particle = static_cast<Candidate*>(candidate->GetCandidates()->At(0)); // this is "particle" 
+        if(!hasPileup){
+          GenParticle* particle = static_cast<GenParticle*>(track->Particle.GetObject());
+          pid = particle->PID;
+          double ptRes = track->PT - particle->PT;  
+          double z0Res = track->DZ - particle->DZ;
+          double d0Res = track->D0 - particle->D0;
+          double etaRes = track->Eta - particle->Eta; 
+          double cotThetaRes = track->CtgTheta - particle->CtgTheta; 
+          double phiRes = track->Phi - particle->Phi;
+        }
+
+
+        //std::cout << "particlePt: " << particle->PT << "\ttrackpT: " << track->PT << "\tresolution: " << ptRes << std::endl;
       }
-
-
-        //GenParticle* particle = (GenParticle*) track->Particle.GetObject();
-        //std::cout << "track pt: " << track->PT << "\tparticle pt: " << particle->PT << "\t resolution: " << track->PT - particle->PT << std::endl;
-        /********
-        // pt resolution
-        auto can = (Candidate*) branch->At(iTrack);
-        auto collection = can->GetCandidates();
-        std::cout << "branch: " << branchNames.at(iBranch) << " nCandidates: " << collection->GetEntriesFast() << std::endl; 
-        auto hit0 = collection->At(0); // particle that made it (?)
-        auto hit1 = collection->At(1); // hit1
-        auto hit2 = collection->At(2); // hit2
-        auto hit3 = collection->At(3); // hit3 
-        **********/
-
-      /********
-      int iTrack(0);
-      for(auto itTrack=branch->begin(); itTrack != branch->end(); ++itTrack){
-        Track* track = dynamic_cast<Track*>(*itTrack);
-
-        plots->track1Pt.at(i)->Fill();
-      }
-      **********/
-
-    }
-    
-        //for(auto itTrack=branchTrack->begin(); itTrack != branchTrack->end(); ++itTrack){
-        //}
-
-
+    } // end loop over track branches
     
 
+    ////////////////////////////////////////
+    // Loop over the different jet branches
+    ////////////////////////////////////////
+
+    for(int iBranch=0; iBranch<jetBranches.size(); ++iBranch){
+      TClonesArray* branch = jetBranches.at(iBranch);
+
+      // Make sure jets are ordered in pT
+      int nJets = branch->GetEntriesFast();
+      std::vector<Jet*> sortedJets;
+      sortedJets.reserve(nJets);
+      for(int iJet = 0; iJet<nJets; ++iJet){
+        Jet* jet = static_cast<Jet*>(branch->At(iJet));
+        sortedJets.push_back(jet);
+      }
+      std::sort(sortedJets.begin(), sortedJets.end(), reverseJet);
+
+      // Loop over sorted jets
+      for(int iJet=0; iJet<nJets; ++iJet){
+        Jet* jet = sortedJets.at(iJet);
+        if(iJet < N_JETS){
+          plots->jetiPt.at(iBranch).at(iJet)->Fill(jet->PT, eventWeight);
+        }
+      }
+
+    } // end loop over jet branches
 
 
   } // end loop over entries
@@ -214,7 +328,7 @@ void PrintHistograms(ExRootResult *result, Plots *plots)
 
 //------------------------------------------------------------------------------
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
 
   gROOT->SetBatch(1);
@@ -223,12 +337,90 @@ int main(int argc, char *argv[])
   std::string appName = "acceptances";
   std::cout << "Will execute " << appName << std::endl;
 
+  std::string outputFile;
+  std::string inputGlob; bool inputGlobSet(false);
+  std::string inputFile; bool inputFileSet(false);
 
   // Get input agruments
-  std::string inputFile = argv[1]; 
-  int nEvents = atoi(argv[2]);
-  nEvents = atoi(argv[2]);
+  //std::string inputFile = argv[1]; 
+  //std::string outputFile = argv[2];
+  //int nEvents = atoi(argv[3]);
+  //int hasPileup = atoi(argv[4]);
+  int nEvents(-1);
+  bool hasPileup(false);
+  //bool overwrite(false);
+  bool overwrite(false);
 
+
+  struct option longopts[] = {
+    // These options set a flag
+    {"overwrite",   no_argument,        0, 'w'},
+    {"hasPileup",   no_argument,        0, 'p'},
+    {"debug",   no_argument,            0, 'd'},
+    // These options don't set a flag
+    {"input",       required_argument,  0, 'i'},
+    {"output",      required_argument,  0, 'o'},
+    {"nEvents",     required_argument,  0, 'n'},
+    {"inputGlob",   required_argument,  0, 'g'},
+    {0,0,0,0}
+  };
+
+  int option_index = 0;
+  int oc; 
+  // if option letter is followed by a colon, then the option requires an argument
+  while((oc = getopt_long(argc, argv, "wpdi:o:n:g:", longopts, &option_index)) != -1){
+    switch(oc){
+      case 'o':
+        outputFile = optarg;  break;
+      case 'w':
+        overwrite = true;     break;
+      case 'd':
+        m_debug = true;     break;
+      case 'i':
+        inputFileSet = true;
+        inputFile = optarg;   break;
+      case 'n':
+        nEvents = std::atoi(optarg);    break;
+      case 'g':
+        inputGlobSet = true;
+        inputGlob = optarg;   break;
+      case 'p':
+        hasPileup = true;     break;
+      case ':':
+        std::cout << "WARNING: missing argument" << std::endl; 
+        break;
+      case '?':
+        std::cout << "WARNING: unknown argument" << std::endl; 
+        break;
+    } // end of switch
+  } // end of while(oc) 
+
+  std::cout << "Input arguments:" << std::endl; 
+  std::cout << "\tinputFile: " << inputFile << std::endl; 
+  std::cout << "\toutputFile: " << outputFile << std::endl; 
+  std::cout << "\tinputGlob: " << inputGlob << std::endl; 
+  std::cout << "\tnEvents: " << nEvents << std::endl; 
+  std::cout << "\toverwrite: " << overwrite << std::endl; 
+  std::cout << "\thasPileup: " << hasPileup << std::endl; 
+
+  if(!(inputGlobSet || inputFileSet)){
+    std::cerr << "ERROR: need to choose either a single inputFile, or an input glob pattern" << std::endl; // not neither
+    return 1;
+  }
+  if(inputGlobSet && inputFileSet){
+    std::cerr << "ERROR: need to choose either a single inputFile, or an input glob pattern" << std::endl; // not both
+    return 1;
+  }
+
+
+  // test if outputFile exists (exit if it does and overwrite not set)
+  if(fileExists(outputFile) && overwrite){
+    std::cout << "WARNING: " <<  outputFile << " file exists, will overwrite" << std::endl;
+  }
+  else if(fileExists(outputFile)){
+    std::cerr << "ERROR: " <<  outputFile << " file exists, will NOT overwrite" << std::endl;
+    return 0;
+  }
 
   // info relating to input arguments
   if(nEvents < 0){
@@ -239,8 +431,8 @@ int main(int argc, char *argv[])
   }
 
 
-  // branches to loop over
-  std::vector<std::string> branchNames = {
+  // track branches to loop over
+  std::vector<std::string> trackBranchNames = {
         // default delphes tracks
         "TruthTrack",
         "Track",
@@ -252,26 +444,47 @@ int main(int argc, char *argv[])
         "PBMatchedHitTracks", 
   };
 
+  // Jet branches to loop over
+  std::vector<std::string> jetBranchNames = {
+        // default delphes jets
+        "TruthTrackJets",
+        "SmearedTrackJets",
+        "PBMatchedTrackJets",
+
+        // Jets from tracks from hits 
+        "TruthHitTrackJets",
+        "SmearedHitTrackJets",
+        "PBMatchedHitTrackJets",
+  };
+
   // control analysis
   TChain *chain = new TChain("Delphes");
-  std::cout << "Adding " << inputFile << " to chain" << std::endl;
-  chain->Add(inputFile.c_str());
+  if(inputFileSet){
+    std::cout << "Adding " << inputFile << " to chain" << std::endl;
+    chain->Add(inputFile.c_str());
+  }
+  else if(inputGlobSet){
+    std::vector<std::string> fileList = glob(inputGlob);
+    for(const auto& fName : fileList){
+      std::cout << "Adding " << fName << " to chain" << std::endl;
+      chain->Add(fName.c_str());
+    }
+  }
 
 
   ExRootTreeReader *treeReader = new ExRootTreeReader(chain);
   ExRootResult *result = new ExRootResult();
 
   Plots *plots = new Plots;
-  BookHistograms(result, plots, branchNames);
-  AnalyseEvents(nEvents, treeReader, plots, branchNames);
+  BookHistograms(result, plots, trackBranchNames, jetBranchNames);
+  AnalyseEvents(nEvents, hasPileup, treeReader, plots, trackBranchNames, jetBranchNames);
 
   // Turn off, never really want this ... 
   int doPrintHistograms = 0; 
   if(doPrintHistograms) PrintHistograms(result, plots);
 
-  std::string outputFile = "test.root";
   std::cout << "Writing to file: " << outputFile << std::endl;
-  result->Write(outputFile.c_str());
+  result->Write(outputFile.c_str(), overwrite);
 
   std::cout << "** Exiting..." << std::endl;
 

@@ -70,6 +70,8 @@ PrimaryBinFinder::~PrimaryBinFinder()
 void PrimaryBinFinder::Init()
 {
 
+  m_debug = GetBool("debug", false);
+
   // read parameters
   // 1: primary bin (sliding window)
   // 2: could be something else (to be implemented)  

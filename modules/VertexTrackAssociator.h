@@ -31,6 +31,7 @@ public:
   void Finish();
 
 private:
+  bool m_debug;
 
   Int_t fNVertexToAssociate;
 

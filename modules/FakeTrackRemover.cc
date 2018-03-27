@@ -72,7 +72,7 @@ void FakeTrackRemover::Init()
 {
 
   // debug 
-  m_debug = false;
+  m_debug = GetBool("debug", false); 
 
   // calculate deltaphi limits (note, input units are [mm])
   m_deltaPhi12Limit = calcDeltaPhiLimit(552.0, 582.0);

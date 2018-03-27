@@ -28,6 +28,7 @@
 #include "TFolder.h"
 
 #include <iostream>
+#include <sstream>
 
 using namespace std;
 
@@ -62,11 +63,25 @@ void ExRootResult::Reset()
 
 //------------------------------------------------------------------------------
 
-void ExRootResult::Write(const char *fileName)
+void ExRootResult::Write(const char *fileName, bool overwrite)
 {
-  TObject *object;
+  TObject* object;
   TDirectory *currentDirectory = gDirectory;
-  TFile *file = new TFile(fileName, "RECREATE");
+  TFile* file; 
+  
+  if(overwrite){
+    file = TFile::Open(fileName, "RECREATE");
+  }
+  else{
+    file = TFile::Open(fileName, "CREATE");
+  }
+
+  if(file == NULL){
+    stringstream message;
+    message << "can't create output file " << fileName; 
+    throw runtime_error(message.str());
+  }
+
   file->cd();
   std::map<TObject*, PlotSettings>::iterator itPlotMap;
   for(itPlotMap = fPlotMap.begin(); itPlotMap != fPlotMap.end(); ++itPlotMap)
