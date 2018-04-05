@@ -82,9 +82,15 @@ void printTime(clock_t begin, clock_t end, std::string message){
 
 struct Plots {
 
+  TH1* numEntries;
   std::vector<TH1*> fakeTrackPt;
   std::vector<TH1*> trueTrackPt;
+
   std::vector<TH1*> allTrackPt;
+  std::vector<TH1*> allTrackEta;
+  std::vector<TH1*> track1Eta;
+  std::vector<TH2*> allTrackPt_Eta;
+  std::vector<TH2*> track1Pt_Eta;
 
   std::vector<TH1*> electron1Pt;
   std::vector<TH1*> electron2Pt;
@@ -98,6 +104,7 @@ struct Plots {
   std::vector<TH1*> track3Pt; 
   std::vector<TH1*> track4Pt; 
 
+
   std::vector<std::vector<TH1*>> jetiPt;
 
 };
@@ -108,6 +115,7 @@ void BookHistograms(ExRootResult *result, Plots *plots, std::vector<std::string>
 {
 
 
+  plots->numEntries = result->AddHist1D("numEntries", "", "", "", 2, 0, 2, 0, 0);
 
   // one of each type of histogram for each branchname 
   for(int i=0; i<trackBranchNames.size(); ++i){
@@ -123,6 +131,21 @@ void BookHistograms(ExRootResult *result, Plots *plots, std::vector<std::string>
         );
     plots->allTrackPt.push_back(
         result->AddHist1D(branch+"_allTrackPt", "", "", "", 1000, 0, 1000, 0, 0)
+        );
+
+    // Track eta / pt 
+    plots->allTrackEta.push_back(
+        result->AddHist1D(branch+"_allTrackEta", "", "", "", 200, -10, 10, 0, 0)
+        );
+    plots->track1Eta.push_back(
+        result->AddHist1D(branch+"_track1Eta", "", "", "", 200, -10, 10, 0, 0)
+        );
+
+    plots->allTrackPt_Eta.push_back(
+        result->AddHist2D((branch+"_allTrackPt_Eta").c_str(), "", "", "", 200, 0, 200, 200, -10, 10)
+        );
+    plots->track1Pt_Eta.push_back(
+        result->AddHist2D((branch+"_track1Pt_eta").c_str(), "" ,"", "", 200, 0, 200, 200, -10, 10)
         );
 
     // Nth track pT
@@ -235,6 +258,7 @@ void AnalyseEvents(const int nEvents, bool hasPileup, ExRootTreeReader *treeRead
     ////////////////////////////////////////
     
     if(m_debug) std::cout << "Being track loop" << std::endl;
+    plots->numEntries->Fill(1);
     for(int iBranch=0; iBranch<trackBranchNames.size(); ++iBranch){
       TClonesArray* branch = trackBranches.at(iBranch);
 
@@ -274,6 +298,13 @@ void AnalyseEvents(const int nEvents, bool hasPileup, ExRootTreeReader *treeRead
         // Note: particle = static_cast<Candidate*>(candidate->GetCandidates()->At(0)); // this is "particle" 
         if(!hasPileup){
           GenParticle* particle = static_cast<GenParticle*>(track->Particle.GetObject());
+          if(iTrack==0){
+            plots->track1Eta.at(iBranch)->Fill(particle->Eta, eventWeight);
+            plots->track1Pt_Eta.at(iBranch)->Fill(track->PT, particle->Eta, eventWeight);
+          }
+          plots->allTrackPt_Eta.at(iBranch)->Fill(track->PT, particle->Eta, eventWeight);
+          plots->allTrackEta.at(iBranch)->Fill(particle->Eta, eventWeight);
+
           int pid = particle->PID;
           double ptRes = track->PT - particle->PT;  
           double z0Res = track->DZ - particle->DZ;
@@ -281,7 +312,8 @@ void AnalyseEvents(const int nEvents, bool hasPileup, ExRootTreeReader *treeRead
           double etaRes = track->Eta - particle->Eta; 
           double cotThetaRes = track->CtgTheta - particle->CtgTheta; 
           double phiRes = track->Phi - particle->Phi;
-
+          //std::cout << "particle eta: " << particle->Eta << std::endl;
+          
           if(abs(pid) == 11 || abs(pid) == 13){ // lepton
             leptons.push_back(track);
             //plots->lepton1Pt
@@ -298,18 +330,18 @@ void AnalyseEvents(const int nEvents, bool hasPileup, ExRootTreeReader *treeRead
       // fill plots for leptons 
       for(int iLep=0; iLep < leptons.size(); ++iLep){
         Track* lepton = leptons.at(iLep);
-        if(iLep == 0) plots->lepton1Pt.at(iBranch)->Fill( lepton->PT );
-        if(iLep == 1) plots->lepton2Pt.at(iBranch)->Fill( lepton->PT );
+        if(iLep == 0) plots->lepton1Pt.at(iBranch)->Fill( lepton->PT, eventWeight );
+        if(iLep == 1) plots->lepton2Pt.at(iBranch)->Fill( lepton->PT, eventWeight );
       }
       for(int iEle=0; iEle < electrons.size(); ++iEle){
         Track* electron = electrons.at(iEle);
-        if(iEle == 0) plots->electron1Pt.at(iBranch)->Fill( electron->PT );
-        if(iEle == 1) plots->electron2Pt.at(iBranch)->Fill( electron->PT );
+        if(iEle == 0) plots->electron1Pt.at(iBranch)->Fill( electron->PT, eventWeight );
+        if(iEle == 1) plots->electron2Pt.at(iBranch)->Fill( electron->PT, eventWeight );
       }
       for(int iMuon=0; iMuon < muons.size(); ++iMuon){
         Track* muon = muons.at(iMuon);
-        if(iMuon == 0) plots->muon1Pt.at(iBranch)->Fill( muon->PT );
-        if(iMuon == 1) plots->muon2Pt.at(iBranch)->Fill( muon->PT );
+        if(iMuon == 0) plots->muon1Pt.at(iBranch)->Fill( muon->PT, eventWeight );
+        if(iMuon == 1) plots->muon2Pt.at(iBranch)->Fill( muon->PT, eventWeight );
       }
 
 
@@ -487,6 +519,8 @@ int main(int argc, char* argv[])
         "SmearedHitTrackJets",
         "PBMatchedHitTrackJets",
   };
+  jetBranchNames = {};
+  trackBranchNames = {"TruthTrack"};
 
   // control analysis
   TChain *chain = new TChain("Delphes");

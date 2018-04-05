@@ -261,6 +261,8 @@ TrackParameterSet HitToTrack::CalculateTrackParametersTriplet(std::vector<Candid
   // Assumes the track originates from (0, 0, z0)
   // Calculates the track parameters using the origin and two other points, corresponding to the innermost and outermost hit
   
+  //if(m_debug) std::cout << "HitToTrack::CalculateTrackParametersTriplet()" << std::endl;
+
   if(seeds.size() != 3){
     std::cerr << "ERROR: more than three hits associate to this track. Algorith is not compatible." << std::endl;
     exit(1);
@@ -379,11 +381,6 @@ TrackParameterSet HitToTrack::CalculateTrackParametersTriplet(std::vector<Candid
   trackParameters.isFake = isFake(seeds);
   trackParameters.Charge = sgn(radius);  // use Andre's radius 
 
-  //trackParameters.zresiduum = 
-  //trackParameters.beamlineIntersect = 
-
-
-
 
   return trackParameters; 
 
@@ -466,12 +463,12 @@ void HitToTrack::Process()
     std::sort(layerIDs.begin(), layerIDs.end()); // sort into ascending order
 
     // Get the seeds 
-    std::vector< std::vector<Candidate*> > theSeeds = this->FindSeedsTriplet(hitContainer, hitMap, loc, layerIDs); 
+    std::vector< std::vector<Candidate*> > seedSetVector = this->FindSeedsTriplet(hitContainer, hitMap, loc, layerIDs); 
     
-    if(m_debug) std::cout << "HitToTrack::Process(): event has " << theSeeds.size() << " sets of seeds" << std::endl;
+    if(m_debug) std::cout << "HitToTrack::Process(): event has " << seedSetVector.size() << " sets of seeds" << std::endl;
 
     // Reconstruct the seeds into tracks, apply tighter constraints on the track selection
-    for(auto& seeds : theSeeds){
+    for(auto& seeds : seedSetVector){
 
       // Calculate track parameters 
       TrackParameterSet parameters = this->CalculateTrackParametersTriplet(seeds);

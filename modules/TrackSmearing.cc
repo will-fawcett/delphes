@@ -65,61 +65,75 @@ void TrackSmearing::Init()
   // read resolution formula
 
   // !!! IF WE WANT TO KEEP ROOT INPUT !!!
+  // D0 resolution
   if (string (GetString("D0ResolutionFormula", "0.0")) != "0.0")
-    {
-      fD0Formula->Compile(GetString("D0ResolutionFormula", "0.0"));
-      fUseD0Formula = true;
-    }
+  {
+    fD0Formula->Compile(GetString("D0ResolutionFormula", "0.0"));
+    fUseD0Formula = true;
+  }
   else
-    {
-      fD0ResolutionFile = GetString("D0ResolutionFile", "errors.root");
-      fD0ResolutionHist = GetString("D0ResolutionHist", "d0");
-      fUseD0Formula = false;
-    }
+  {
+    fD0ResolutionFile = GetString("D0ResolutionFile", "errors.root");
+    fD0ResolutionHist = GetString("D0ResolutionHist", "d0");
+    fUseD0Formula = false;
+    std::cout << "TrackSmearing::Init(): Using ROOT file for D0Resolution" << std::endl;
+  }
+
+  // DZ resolution
   if (string (GetString("DZResolutionFormula", "0.0")) != "0.0")
-    {
-      fDZFormula->Compile(GetString("DZResolutionFormula", "0.0"));
-      fUseDZFormula = true;
-    }
+  {
+    fDZFormula->Compile(GetString("DZResolutionFormula", "0.0"));
+    fUseDZFormula = true;
+  }
   else
-    {
-      fDZResolutionFile = GetString("DZResolutionFile", "errors.root");
-      fDZResolutionHist = GetString("DZResolutionHist", "dz");
-      fUseDZFormula = false;
-    }
+  {
+    fDZResolutionFile = GetString("DZResolutionFile", "errors.root");
+    fDZResolutionHist = GetString("DZResolutionHist", "dz");
+    fUseDZFormula = false;
+    std::cout << "TrackSmearing::Init(): Using ROOT file for DZResolution" << std::endl;
+  }
+
+  // P resolution
   if (string (GetString("PResolutionFormula", "0.0")) != "0.0")
-    {
-      fPFormula->Compile(GetString("PResolutionFormula", "0.0"));
-      fUsePFormula = true;
-    }
+  {
+    fPFormula->Compile(GetString("PResolutionFormula", "0.0"));
+    fUsePFormula = true;
+  }
   else
-    {
-      fPResolutionFile = GetString("PResolutionFile", "errors.root");
-      fPResolutionHist = GetString("PResolutionHist", "p");
-      fUsePFormula = false;
-    }
+  {
+    fPResolutionFile = GetString("PResolutionFile", "errors.root");
+    fPResolutionHist = GetString("PResolutionHist", "p");
+    fUsePFormula = false;
+    std::cout << "TrackSmearing::Init(): Using ROOT file for PResolution" << std::endl;
+  }
+
+  // Cot(theta) resolution
   if (string (GetString("CtgThetaResolutionFormula", "0.0")) != "0.0")
-    {
-      fCtgThetaFormula->Compile(GetString("CtgThetaResolutionFormula", "0.0"));
-      fUseCtgThetaFormula = true;
-    }
+  {
+    fCtgThetaFormula->Compile(GetString("CtgThetaResolutionFormula", "0.0"));
+    fUseCtgThetaFormula = true;
+  }
   else
-    {
-      fCtgThetaResolutionFile = GetString("CtgThetaResolutionFile", "errors.root");
-      fCtgThetaResolutionHist = GetString("CtgThetaResolutionHist", "ctgTheta");
-      fUseCtgThetaFormula = false;
-    }
+  {
+    fCtgThetaResolutionFile = GetString("CtgThetaResolutionFile", "errors.root");
+    fCtgThetaResolutionHist = GetString("CtgThetaResolutionHist", "ctgTheta");
+    fUseCtgThetaFormula = false;
+    std::cout << "TrackSmearing::Init(): Using ROOT file for CtgThetaResolution" << std::endl;
+  }
+
+  // Phi resolution
   if (string (GetString("PhiResolutionFormula", "0.0")) != "0.0")
-    {
-      fPhiFormula->Compile(GetString("PhiResolutionFormula", "0.0"));
-      fUsePhiFormula = true;
-    }
+  {
+    fPhiFormula->Compile(GetString("PhiResolutionFormula", "0.0"));
+    fUsePhiFormula = true;
+  }
   else
-    {
-      fPhiResolutionFile = GetString("PhiResolutionFile", "errors.root");
-      fPhiResolutionHist = GetString("PhiResolutionHist", "phi");
-      fUsePhiFormula = false;
-    }
+  {
+    fPhiResolutionFile = GetString("PhiResolutionFile", "errors.root");
+    fPhiResolutionHist = GetString("PhiResolutionHist", "phi");
+    fUsePhiFormula = false;
+    std::cout << "TrackSmearing::Init(): Using ROOT file for PhiResolution" << std::endl;
+  }
 
   fApplyToPileUp = GetBool("ApplyToPileUp", true);
 

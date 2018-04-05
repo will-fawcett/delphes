@@ -1,5 +1,5 @@
 ! 1) Settings used in the main program.
-Main:numberOfEvents = 1000          ! number of events to generate
+Main:numberOfEvents = 10         ! number of events to generate
 Main:timesAllowErrors = 3          ! how many aborts before run stops
 
 ! 2) Settings related to output in init(), next() and stat().
@@ -13,7 +13,7 @@ Next:numberShowEvent = 0           ! print event record n times
 ! 3) Beam parameter settings. Values below agree with default ones.
 Beams:idA = 2212                   ! first beam, p = 2212, pbar = -2212
 Beams:idB = 2212                   ! second beam, p = 2212, pbar = -2212
-Beams:eCM = 100000.                 ! CM energy of collision
+Beams:eCM = 100000.                ! CM energy of collision
 
 ! 4) Settings for the hard-process generation.
 Top:gg2ttbar = on                  ! g g -> t tbar
