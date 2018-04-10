@@ -414,6 +414,26 @@ TProfile *ExRootResult::AddProfile(const char *name, const char *title,
 
 //------------------------------------------------------------------------------
 
+TH2 *ExRootResult::AddHist2D(std::string name, std::string title,
+                             std::string xlabel, std::string ylabel,
+                             Int_t nxbins, Axis_t xmin, Axis_t xmax,
+                             Int_t nybins, Axis_t ymin, Axis_t ymax,
+                             Int_t logx, Int_t logy, Int_t logz,
+                             const char *option){
+  // overload to take std::string
+
+  this->AddHist2D(name.c_str(), title.c_str(),
+      xlabel.c_str(), ylabel.c_str(), 
+      nxbins, xmin, xmax, 
+      nybins, ymin, ymax, 
+      logx, logy, logz, 
+      option);
+
+}
+
+  
+//------------------------------------------------------------------------------
+
 TH2 *ExRootResult::AddHist2D(const char *name, const char *title,
                              const char *xlabel, const char *ylabel,
                              Int_t nxbins, Axis_t xmin, Axis_t xmax,
@@ -440,6 +460,24 @@ TH2 *ExRootResult::AddHist2D(const char *name, const char *title,
   return hist;
 }
 
+//------------------------------------------------------------------------------
+
+TH3 *ExRootResult::AddHist3D(std::string name, std::string title, 
+                 std::string xlabel, std::string ylabel, std::string zlabel, 
+                 Int_t nxbins, Axis_t xmin, Axis_t xmax,
+                 Int_t nybins, Axis_t ymin, Axis_t ymax,
+                 Int_t nzbins, Axis_t zmin, Axis_t zmax,
+                 Int_t logx, Int_t logy, Int_t logz){
+
+  this->AddHist3D(
+      name.c_str(), title.c_str(), 
+      xlabel.c_str(), ylabel.c_str(), zlabel.c_str(),
+      nxbins, xmin, xmax, 
+      nybins, ymin, ymax, 
+      nzbins, zmin, zmax, 
+      logx, logy, logz);
+
+}
 //------------------------------------------------------------------------------
 
 TH3 *ExRootResult::AddHist3D(const char *name, const char *title, 

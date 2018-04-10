@@ -105,19 +105,35 @@ struct Plots {
   std::vector<TH1*> track4Pt; 
 
 
+  std::vector<TH1*> ptRes;
+  std::vector<TH2*> ptRes_pt;
+  std::vector<TH2*> ptRes_eta;
+  std::vector<TH3*> ptRes_pt_eta;
+
+  std::vector<TH1*> ptResRaw;
+  std::vector<TH2*> ptResRaw_pt;
+  std::vector<TH2*> ptResRaw_eta;
+  std::vector<TH3*> ptResRaw_pt_eta;
+
+  std::vector<TH1*> z0Res;
+  std::vector<TH2*> z0Res_pt;
+  std::vector<TH2*> z0Res_eta;
+  std::vector<TH3*> z0Res_pt_eta;
+
+
   std::vector<std::vector<TH1*>> jetiPt;
 
 };
 
 //------------------------------------------------------------------------------
 
-void BookHistograms(ExRootResult *result, Plots *plots, std::vector<std::string> trackBranchNames, std::vector<std::string> jetBranchNames)
+void BookHistograms(ExRootResult *result, Plots *plots, std::vector<std::string> trackBranchNames, std::vector<std::string> jetBranchNames, bool doResolutionPlots)
 {
 
-
+  // book keeping
   plots->numEntries = result->AddHist1D("numEntries", "", "", "", 2, 0, 2, 0, 0);
 
-  // one of each type of histogram for each branchname 
+  // one of each histogram for each branchname 
   for(int i=0; i<trackBranchNames.size(); ++i){
 
     std::string branch = trackBranchNames.at(i);
@@ -182,6 +198,53 @@ void BookHistograms(ExRootResult *result, Plots *plots, std::vector<std::string>
         result->AddHist1D(branch+"_lepton2Pt", "", "", "", 1000, 0, 1000, 0, 0)
         );
 
+    if(doResolutionPlots){
+      // resolution histograms
+      float ptMin(-10), ptMax(10);
+      plots->ptRes.push_back(
+          result->AddHist1D(branch+"_ptRes", "pt resolution", "#deltap_{T}/p_{T}", "Number of Tracks", 1000, ptMin, ptMax, 0, 0)
+          );
+      plots->ptRes_pt.push_back(
+          result->AddHist2D(branch+"_ptRes_pt", "pt resolution", "#deltap_{T}/p_{T}", "Truth p_{T} [GeV]", 1000, ptMin, ptMax, 200, 0, 1000)
+          );
+      plots->ptRes_eta.push_back(
+          result->AddHist2D(branch+"_ptRes_eta", "eta resolution", "#deltap_{T}/p_{T}", "Truth #eta", 1000, ptMin, ptMax, 200, -2, 2)
+          );
+      plots->ptRes_pt_eta.push_back(
+          result->AddHist3D(branch+"_ptRes_pt_eta", "pt resolution", "#deltap_{T}/p_{T}", "Truth p_{T} [GeV]", "Truth #eta", 1000, ptMin, ptMax, 200, 0, 200, 100, -2, 2)
+          );
+
+      // wont be able to calculate pT resolutions for tracks with > 200 GeV
+      float ptMinRaw(-200), ptMaxRaw(200); 
+      plots->ptResRaw.push_back(
+          result->AddHist1D(branch+"_ptResRaw", "pt resolution", "#deltap_{T} [GeV]", "Number of Tracks", 1000, ptMinRaw, ptMaxRaw, 0, 0)
+          );
+      plots->ptResRaw_pt.push_back(
+          result->AddHist2D(branch+"_ptResRaw_pt", "pt resolution", "#deltap_{T} [GeV]", "Truth p_{T} [GeV]", 1000, ptMinRaw, ptMaxRaw, 200, 0, 2000)
+          );
+      plots->ptResRaw_eta.push_back(
+          result->AddHist2D(branch+"_ptResRaw_eta", "pt resolution", "#deltap_{T} [GeV]", "Truth #eta", 1000, ptMinRaw, ptMaxRaw, 200, -2, 2)
+          );
+      plots->ptResRaw_pt_eta.push_back(
+          result->AddHist3D(branch+"_ptResRaw_pt_eta", "pt resolution", "#deltap_{T} [GeV]", "Truth p_{T} [GeV]", "Truth #eta", 4000, ptMinRaw, ptMaxRaw, 200, 0, 200, 40, -2, 2)
+          ); // lots of bins needed since pT resolution degreades over many decades
+
+      // z0
+      float z0Min(-20), z0Max(20); // large range for low pT tracks needed
+      plots->z0Res.push_back(
+          result->AddHist1D(branch+"_z0Res", "z0 resolution", "#deltaz_{0} [mm]", "Number of Tracks", 1000, z0Min, z0Max)
+          );
+      plots->z0Res_pt.push_back(
+          result->AddHist2D(branch+"_z0Res_pt", "z0 resolution", "#deltaz_{0} [mm]", "Truth p_{T} [GeV]", 1000, z0Min, z0Max, 200, 0, 2000)
+          );
+      plots->z0Res_eta.push_back(
+          result->AddHist2D(branch+"_z0Res_eta", "z0 resolution", "#deltaz_{0} [mm]", "Truth #eta", 1000, z0Min, z0Max, 200, -2, 2)
+          );
+      plots->z0Res_pt_eta.push_back(
+          result->AddHist3D(branch+"_z0Res_pt_eta", "z0 resolution", "#deltaz_{0} [mm]", "Truth p_{T} [GeV]", "Truth #eta", 2000, z0Min, z0Max, 200, 0, 200, 100, -2, 2)
+          ); // particularly tricky, lots of bins
+    }
+
 
   } // end loop over track branch names
   
@@ -205,7 +268,7 @@ void BookHistograms(ExRootResult *result, Plots *plots, std::vector<std::string>
 
 //------------------------------------------------------------------------------
 
-void AnalyseEvents(const int nEvents, bool hasPileup, ExRootTreeReader *treeReader, Plots *plots, std::vector<std::string> trackBranchNames, std::vector<std::string> jetBranchNames)
+void AnalyseEvents(const int nEvents, bool hasPileup, ExRootTreeReader *treeReader, Plots *plots, std::vector<std::string> trackBranchNames, std::vector<std::string> jetBranchNames, bool doResolutionPlots)
 {
 
   ///////////////////////////
@@ -293,7 +356,7 @@ void AnalyseEvents(const int nEvents, bool hasPileup, ExRootTreeReader *treeRead
           plots->trueTrackPt.at(iBranch)->Fill(track->PT, eventWeight);
         }
 
-        // calculate resolutions
+        // Calculate resolutions
         // Some of the might not make sense physically
         // Note: particle = static_cast<Candidate*>(candidate->GetCandidates()->At(0)); // this is "particle" 
         if(!hasPileup){
@@ -305,15 +368,8 @@ void AnalyseEvents(const int nEvents, bool hasPileup, ExRootTreeReader *treeRead
           plots->allTrackPt_Eta.at(iBranch)->Fill(track->PT, particle->Eta, eventWeight);
           plots->allTrackEta.at(iBranch)->Fill(particle->Eta, eventWeight);
 
+          // Lepton plots
           int pid = particle->PID;
-          double ptRes = track->PT - particle->PT;  
-          double z0Res = track->DZ - particle->DZ;
-          double d0Res = track->D0 - particle->D0;
-          double etaRes = track->Eta - particle->Eta; 
-          double cotThetaRes = track->CtgTheta - particle->CtgTheta; 
-          double phiRes = track->Phi - particle->Phi;
-          //std::cout << "particle eta: " << particle->Eta << std::endl;
-          
           if(abs(pid) == 11 || abs(pid) == 13){ // lepton
             leptons.push_back(track);
             //plots->lepton1Pt
@@ -324,6 +380,35 @@ void AnalyseEvents(const int nEvents, bool hasPileup, ExRootTreeReader *treeRead
               muons.push_back(track);
             }
           }
+
+          if(doResolutionPlots){
+            double ptResolution = track->PT - particle->PT;  
+            double z0Resolution = track->DZ - particle->DZ;
+            double d0Resolution = track->D0 - particle->D0;
+            double etaResolution = track->Eta - particle->Eta; 
+            double cotThetaResolution = track->CtgTheta - particle->CtgTheta; 
+            double phiResolution = track->Phi - particle->Phi;
+
+            // Resolution plots
+            plots->ptResRaw.at(iBranch)->Fill(ptResolution);
+            plots->ptResRaw_pt.at(iBranch)->Fill(ptResolution, particle->PT);
+            plots->ptResRaw_eta.at(iBranch)->Fill(ptResolution, particle->Eta);
+            plots->ptResRaw_pt_eta.at(iBranch)->Fill(ptResolution, particle->PT, particle->Eta);
+
+            plots->ptRes.at(iBranch)->Fill(ptResolution/particle->PT);
+            plots->ptRes_pt.at(iBranch)->Fill(ptResolution/particle->PT, particle->PT);
+            plots->ptRes_eta.at(iBranch)->Fill(ptResolution/particle->PT, particle->Eta);
+            plots->ptRes_pt_eta.at(iBranch)->Fill(ptResolution/particle->PT, particle->PT, particle->Eta);
+
+            plots->z0Res.at(iBranch)->Fill(z0Resolution);
+            plots->z0Res_pt.at(iBranch)->Fill(z0Resolution, particle->PT);
+            plots->z0Res_eta.at(iBranch)->Fill(z0Resolution, particle->Eta);
+            plots->z0Res_pt_eta.at(iBranch)->Fill(z0Resolution, particle->PT, particle->Eta);
+          }
+          
+
+
+
         }
       } // end loop over tracks
 
@@ -411,14 +496,15 @@ int main(int argc, char* argv[])
   //int hasPileup = atoi(argv[4]);
   int nEvents(-1);
   bool hasPileup(false);
-  //bool overwrite(false);
   bool overwrite(false);
+  bool doResolutionPlots(false);
 
 
   struct option longopts[] = {
     // These options set a flag
     {"overwrite",   no_argument,        0, 'w'},
     {"hasPileup",   no_argument,        0, 'p'},
+    {"doResolution", no_argument,       0, 'r'},
     {"debug",   no_argument,            0, 'd'},
     // These options don't set a flag
     {"input",       required_argument,  0, 'i'},
@@ -431,7 +517,7 @@ int main(int argc, char* argv[])
   int option_index = 0;
   int oc; 
   // if option letter is followed by a colon, then the option requires an argument
-  while((oc = getopt_long(argc, argv, "wpdi:o:n:g:", longopts, &option_index)) != -1){
+  while((oc = getopt_long(argc, argv, "wprdi:o:n:g:", longopts, &option_index)) != -1){
     switch(oc){
       case 'o':
         outputFile = optarg;  break;
@@ -449,6 +535,8 @@ int main(int argc, char* argv[])
         inputGlob = optarg;   break;
       case 'p':
         hasPileup = true;     break;
+      case 'r':
+        doResolutionPlots = true; break;
       case ':':
         std::cout << "WARNING: missing argument" << std::endl; 
         break;
@@ -519,8 +607,6 @@ int main(int argc, char* argv[])
         "SmearedHitTrackJets",
         "PBMatchedHitTrackJets",
   };
-  jetBranchNames = {};
-  trackBranchNames = {"TruthTrack"};
 
   // control analysis
   TChain *chain = new TChain("Delphes");
@@ -541,8 +627,8 @@ int main(int argc, char* argv[])
   ExRootResult *result = new ExRootResult();
 
   Plots *plots = new Plots;
-  BookHistograms(result, plots, trackBranchNames, jetBranchNames);
-  AnalyseEvents(nEvents, hasPileup, treeReader, plots, trackBranchNames, jetBranchNames);
+  BookHistograms(result, plots, trackBranchNames, jetBranchNames, doResolutionPlots);
+  AnalyseEvents(nEvents, hasPileup, treeReader, plots, trackBranchNames, jetBranchNames, doResolutionPlots);
 
   // Turn off, never really want this ... 
   int doPrintHistograms = 0; 
