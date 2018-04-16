@@ -120,6 +120,19 @@ struct Plots {
   std::vector<TH2*> z0Res_eta;
   std::vector<TH3*> z0Res_pt_eta;
 
+  std::vector<TH1*> d0Res;
+  std::vector<TH2*> d0Res_pt;
+  std::vector<TH2*> d0Res_eta;
+  std::vector<TH3*> d0Res_pt_eta;
+
+  std::vector<TH1*> phiRes;
+  std::vector<TH2*> phiRes_pt;
+  std::vector<TH2*> phiRes_eta;
+  std::vector<TH3*> phiRes_pt_eta;
+
+  //std::vector<TH1*> etaRes;
+  //std::vector<TH2*> etaRes_pt;
+  //std::vector<TH2*> etaRes_eta;
 
   std::vector<std::vector<TH1*>> jetiPt;
 
@@ -243,7 +256,37 @@ void BookHistograms(ExRootResult *result, Plots *plots, std::vector<std::string>
       plots->z0Res_pt_eta.push_back(
           result->AddHist3D(branch+"_z0Res_pt_eta", "z0 resolution", "#deltaz_{0} [mm]", "Truth p_{T} [GeV]", "Truth #eta", 2000, z0Min, z0Max, 200, 0, 200, 100, -2, 2)
           ); // particularly tricky, lots of bins
-    }
+
+      // d0
+      float d0Min(-50), d0Max(50); // large range for low pT tracks needed
+      plots->d0Res.push_back(
+          result->AddHist1D(branch+"_d0Res", "d0 resolution", "#deltad_{0} [mm]", "Number of Tracks", 1000, d0Min, d0Max)
+          );
+      plots->d0Res_pt.push_back(
+          result->AddHist2D(branch+"_d0Res_pt", "d0 resolution", "#deltad_{0} [mm]", "Truth p_{T} [GeV]", 1000, d0Min, d0Max, 200, 0, 2000)
+          );
+      plots->d0Res_eta.push_back(
+          result->AddHist2D(branch+"_d0Res_eta", "d0 resolution", "#deltad_{0} [mm]", "Truth #eta", 1000, d0Min, d0Max, 200, -2, 2)
+          );
+      plots->d0Res_pt_eta.push_back(
+          result->AddHist3D(branch+"_d0Res_pt_eta", "d0 resolution", "#deltad_{0} [mm]", "Truth p_{T} [GeV]", "Truth #eta", 2000, d0Min, d0Max, 200, 0, 200, 100, -2, 2)
+          ); // particularly tricky, lots of bins
+
+    float phiMin(-0.1), phiMax(0.1);
+    plots->phiRes.push_back(
+          result->AddHist1D(branch+"_phiRes", "phi resolution", "#delta#phi", "Number of Tracks", 1000, phiMin, phiMax)
+        );
+    plots->phiRes_pt.push_back(
+          result->AddHist2D(branch+"_phiRes_pt", "phi resolution", "#delta#phi", "Truth p_{T} [GeV]", 1000, phiMin, phiMax, 200, 0, 2000)
+        );
+    plots->phiRes_eta.push_back(
+          result->AddHist2D(branch+"_phiRes_eta", "phi resolution", "#delta#phi", "Truth #eta", 1000, phiMin, phiMax, 200, -2, 2)
+        );
+    plots->phiRes_pt_eta.push_back(
+          result->AddHist3D(branch+"_phiRes_pt_eta", "phi resolution", "#delta#phi", "Truth p_{T} [GeV]", "Truth #eta", 1000, phiMin, phiMax, 200, 0, 200, 100, -2, 2)
+        );
+
+    } // end of doResolutionPlots
 
 
   } // end loop over track branch names
@@ -404,6 +447,16 @@ void AnalyseEvents(const int nEvents, bool hasPileup, ExRootTreeReader *treeRead
             plots->z0Res_pt.at(iBranch)->Fill(z0Resolution, particle->PT);
             plots->z0Res_eta.at(iBranch)->Fill(z0Resolution, particle->Eta);
             plots->z0Res_pt_eta.at(iBranch)->Fill(z0Resolution, particle->PT, particle->Eta);
+
+            plots->d0Res.at(iBranch)->Fill(d0Resolution);
+            plots->d0Res_pt.at(iBranch)->Fill(d0Resolution, particle->PT);
+            plots->d0Res_eta.at(iBranch)->Fill(d0Resolution, particle->Eta);
+            plots->d0Res_pt_eta.at(iBranch)->Fill(d0Resolution, particle->PT, particle->Eta);
+
+            plots->phiRes.at(iBranch)->Fill(phiResolution);
+            plots->phiRes_pt.at(iBranch)->Fill(phiResolution, particle->PT);
+            plots->phiRes_eta.at(iBranch)->Fill(phiResolution, particle->Eta);
+            plots->phiRes_pt_eta.at(iBranch)->Fill(phiResolution, particle->PT, particle->Eta);
           }
           
 

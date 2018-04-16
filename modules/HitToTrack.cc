@@ -329,7 +329,13 @@ TrackParameterSet HitToTrack::CalculateTrackParametersTriplet(std::vector<Candid
 
   // phi angle given by line tangent to the circle at (0,0) 
   // atan2(y, x)
-  float phi = atan2f(-b, a); // will return [-pi, pi] 
+  //float phi = atan2f(-b, a); // will return [-pi, pi] 
+  // bugfix from Tamasi
+  float phi = atan2f(-a, b);
+  if(kappa_013 < 0){
+    if(phi < M_PI) phi -= M_PI;
+    else phi += M_PI;
+  }
 
   // Assign the track parameters
   float z0 = z1 - s1* ( z3 - z1 ) / (s3 - s1);
@@ -380,6 +386,13 @@ TrackParameterSet HitToTrack::CalculateTrackParametersTriplet(std::vector<Candid
   trackParameters.kappa_123 = kappa_123;
   trackParameters.isFake = isFake(seeds);
   trackParameters.Charge = sgn(radius);  // use Andre's radius 
+  if(!trackParameters.isFake){
+    // define that a track can only be from PU if it is not a true track 
+    trackParameters.isPU = isTrackPU(seeds); 
+  }
+  else{
+    trackParameters.isPU = 1; 
+  }
 
 
   return trackParameters; 
@@ -401,6 +414,15 @@ float HitToTrack::CalculateD0(float x0, float y0, float radius) const{
   // d0 will be +vq
   return distanceToOrigin - radius;
 }
+
+bool HitToTrack::isTrackPU(std::vector<Candidate*>& seeds) const{
+  // if any of the hits are from a PU track, then the track is from PU (by definition)
+  for(int i=0; i < seeds.size()-1; ++i){
+    if( seeds.at(i)->IsPU ) return true;
+  }
+  return false;
+}
+
 
 bool HitToTrack::isFake(std::vector<Candidate*>& seeds) const{
   // if any of the hits do not originate from the same particle, then the track is fake
@@ -487,6 +509,7 @@ void HitToTrack::Process()
       track->kappa_123 = parameters.kappa_123;
       track->kappa_013 = parameters.kappa_013; 
       track->IsFake = parameters.isFake;
+      track->IsPU = parameters.isPU;
 
       // Set track momentum TLV
       TLorentzVector momentum;

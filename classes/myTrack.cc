@@ -117,7 +117,13 @@ bool myTrack::trackParametersTriplet(){
 
   // phi angle given by line tangent to the circle at (0,0) 
   // atan2(y, x)
-  float phi = atan2f(-b, a); // will return [-pi, pi] 
+  // float phi = atan2f(-b, a)
+  // bugfix from Tamasi
+  float phi = atan2f(-a, b);
+  if(radiusAndre<0){
+    if(phi < M_PI) phi -= M_PI;
+    else phi += M_PI;
+  }
 
   // Assign the track parameters
   m_z0 = z1 - s1* ( z3 - z1 ) / (s3 - s1);

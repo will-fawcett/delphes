@@ -100,8 +100,12 @@ void VertexTrackAssociator::Process()
   Candidate *vertex = static_cast<Candidate*>(fVertexInputArray->At(fNVertexToAssociate)); // assumes vertices already sorted by pT
   float vertexZ = vertex->Position.Z();
   float vertexZerror = vertex->PositionError.Z();
-  float vertexZMax = vertexZ + vertexZerror;
-  float vertexZMin = vertexZ - vertexZerror;
+  //float vertexZMax = vertexZ + vertexZerror;
+  //float vertexZMin = vertexZ - vertexZerror;
+  // WJF edit before talk (!)
+  float vertexZMax = vertexZ + 0.5;
+  float vertexZMin = vertexZ - 0.5;
+  
   
 
   // Match tracks to vertex 

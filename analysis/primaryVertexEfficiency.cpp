@@ -18,20 +18,23 @@
 #include <sys/stat.h>
 #include <getopt.h> // argument parsing! 
 #include <glob.h> 
+#include <vector>
 
 // stuff for ROOT
 #include "TROOT.h"
 #include "TFile.h"
 #include "TH1.h"
-#include "TH2.h"
-#include "TH3.h"
-#include "TLegend.h"
-#include "TPaveText.h"
 #include "TClonesArray.h"
 #include "TNamed.h"
 
+#include <fstream>
+#include <algorithm>
+#include <set>
+#include "json.h"
+
 // global
 bool m_debug = false;
+using namespace nlohmann;
 
 // Fast way to test if a file exists
 inline bool fileExists (const std::string& name) {
@@ -85,79 +88,12 @@ void PrintTrack(Track *track)
 
 //------------------------------------------------------------------------------
 
-
 struct Plots
 {
 
-  TH1 *z0Res;
-  TH2 *z0Res_pt;
-  TH2 *z0Res_eta;
-  TH3 *z0Res_pt_eta;
-
-  TH1 *d0Res;
-  TH2 *d0Res_pt;
-  TH2 *d0Res_eta;
-  TH3 *d0Res_pt_eta;
-
-  TH1 *CtgThetaRes;
-  TH2 *CtgThetaRes_pt;
-  TH2 *CtgThetaRes_eta;
-  TH3 *CtgThetaRes_pt_eta;
-
-  TH1 *phiRes;
-  TH2 *phiRes_pt;
-  TH2 *phiRes_eta;
-  TH3 *phiRes_pt_eta;
-
-  TH1 *pt;
-  TH1 *logpt;
-  TH1 *truthPt;
-  TH1 *ptRes;
-  TH2 *ptRes_pt;
-  TH2 *ptRes_eta;
-  TH3 *ptRes_pt_eta;
-
-  TH1 *ptResRaw;
-  TH2 *ptResRaw_pt;
-  TH2 *ptResRaw_eta;
-  TH3 *ptResRaw_pt_eta;
-
-  TH1 *eta;
-  TH1 *etaRes;
-  TH2 *etaRes_eta;
-  TH3 *etaRes_pt_eta;
-
-  TH2 *track_eta_phi_pt;
-  TH2 *jet_eta_phi_pt;
-
-  // For triggers? 
-  std::vector<TH1*> truthTrackNpT;
-  TH1 *truthTrackPt100;
-
-  // Track jets from Delphes
-  TH1 *allJetPt;
-  TH1 *nJets;
-  std::vector<TH1*> jetNPt;
-  std::vector<TH1*> jetNEta;
-  std::vector<TH1*> jetNPhi;
-  std::vector<TH1*> jetNTrackPt;
-  std::vector<TH1*> jetNTrackMulti;
-
-  // Jets clustered from all Delphes tracks
-  TH1 *nominalJets;
-  std::vector<TH1*> nominalJetNPt;
-  std::vector<TH1*> nominalJetNEta;
-  std::vector<TH1*> nominalJetNPhi;
-  std::vector<TH1*> nominalJetNTrackPt;
-  std::vector<TH1*> nominalJetNTrackMulti;
-
-  // Jets clustered from tracks only associated to the PB
-  TH1 *nAssociatedJets;
-  std::vector<TH1*> associatedJetNPt;
-  std::vector<TH1*> associatedJetNEta;
-  std::vector<TH1*> associatedJetNPhi;
-  std::vector<TH1*> associatedJetNTrackPt;
-  std::vector<TH1*> associatedJetNTrackMulti;
+  std::vector<TH1*> nVerticesPB;
+  std::vector<TH1*> distancePB_PV;
+  std::vector<TH1*> nVerticesPV;
 
   // Primary vertices
   TH1 *binnedZpT;
@@ -166,50 +102,42 @@ struct Plots
   TH1 *misidPV;
   TH1 *misidPVLogx;
 
-  //TH1 *trackMultiplicityInPB;
-  //TH1 *vertexMultiplicityInPB;
-  //TH2 *nVertexVsZVertexPosition;
-  //TH2* nVertexVsZPBPosition;
-  //TH2* PBvZVertexPosition;
-  
-  // Occupancy plots
-  TH2 *trackOccupancy;
-  TProfile *trackOccupancyProf;
 
 };
 
 //------------------------------------------------------------------------------
 
+
 void BookHistograms(ExRootResult *result, Plots *plots)
 {
 
-  // Track occupancy
-  plots->trackOccupancy = result->AddHist2D("trackOccupancy", "", "Track multi per tower", "Track pT [GeV]", 100, 0, 100, 100, 0, 300);
-  plots->trackOccupancyProf = result->AddProfile("trackOccupancyProf", "", "Track multi per tower", "Number of towers", 100, 0, 100);
+  // plots
+  // for all, matched, not matched
+  // number of hist inside PB
+  // distance between PB and vertex
+  std::vector<std::string> categories = {
+    "allNominal", "matchedNominal", "unmatchedNominal", "allHits", "matchedHits", "unmatchedHits"
+  };
 
+  for(auto cat : categories){
+    plots->nVerticesPB.push_back(
+        result->AddHist1D(cat+"_nVerticesPB", "", "Number of vertices inside PB", "", 100, 0, 100, 0, 0)
+        );
+    plots->nVerticesPV.push_back(
+        result->AddHist1D(cat+"_nVerticesPV", "", "Number of vertices near the PV", "", 100, 0, 100, 0, 0)
+        );
+    plots->distancePB_PV.push_back(
+        result->AddHist1D(cat+"_distancePB_PV", "", "Distance between PB and PV [mm]", "", 600, -300, 300, 0, 0)
+        );
 
-
+  }
 
   plots->misidPVLogx = result->AddHist1D("misidPVLogx", "Misidentified primary vertices", "Distance between PB and true PV [mm]", "Number of events", 200, 0, 400, 1, 0); // probably will be some overflow
   plots->misidPV = result->AddHist1D("misidPV", "Misidentified primary vertices", "Distance between PB and true PV [mm]", "Number of events", 200, 0, 200, 0, 0); // probably will be some overflow
 
-  // primary bin 
-  //plots->trackMultiplicityInPB    = result->AddHist1D("trackMultiplicityInPB", "Track multiplicity in PB", "", "", 100, 0, 100);
-  //plots->vertexMultiplicityInPB   = result->AddHist1D("vertexMultiplicityInPB", "Track multiplicity in PB", "", "", 100, 0, 100);
-  //plots->nVertexVsZVertexPosition = result->AddHist2D("nVertexVsZVertexPosition", "Number of vertices in PB", "z position of true PV", 100, 0, 100, 100, -300, 300);
-  //plots->nVertexVsZPBPosition     = result->AddHist2D("nVertexVsZPBPosition", "Number of vertices in PB", "z position of PB", 100, 0, 100, 100, -300, 300);
-  //plots->PBvZVertexPosition       = result->AddHist2D("PBvZVertexPosition", "z position of PB", "z position of PV", 100, -300, 300, 100, -300, 300);
-
-
-
-  plots->nJets           = result->AddHist1D( "nJets", "nJets", "Number of Jets", "", 100, 0, 100, 0, 0 );
-  plots->nAssociatedJets = result->AddHist1D( "nAssociatedJets", "nAssociatedJets", "Number of Jets", "", 100, 0, 100, 0, 0 );
-  plots->allJetPt        = result->AddHist1D("allJetPt", "", "Jet p_{T} (all jets) [GeV]", "", 100, 0, 1000);
 
   // z pt
   plots->binnedZpT = result->AddHist1D( "binnedZpT", "", "z position [mm]", "Sum(p_{T}) [GeV]", 600, -300, 300);
-
-
 
 }
 
@@ -233,8 +161,11 @@ void AnalyseEvents(const int nEvents, ExRootTreeReader *treeReader, Plots *plots
 
   TClonesArray *branchPrimaryBinFromHits = treeReader->UseBranch("PrimaryBinHits");
 
-  //TClonesArray *branchTower      = treeReader->UseBranch("Tower");
-  //TClonesArray *branchPileupParticle = treeReader->UseBranch("PileupParticle");
+
+  TClonesArray *branchTracksFromHitsSmeared = treeReader->UseBranch("SmearedTracksFromHits");
+  TClonesArray *branchMatchedTracks = treeReader->UseBranch("PBMatchedHitTracks");
+  TClonesArray *branchHit = treeReader->UseBranch("Hits");
+
 
 
 
@@ -265,16 +196,6 @@ void AnalyseEvents(const int nEvents, ExRootTreeReader *treeReader, Plots *plots
     float binWidth  = 1.0; // mm
     float slideStep = 0.1; // mm
 
-
-
-    //std::map<std::string, float> PBInfo = findPrimaryBin(branchTrack, binWidth, slideStep, beamMinZ, beamMaxZ);
-    //float zMin   = PBInfo["zMin"];
-    //float zMax   = PBInfo["zMax"];
-    //int nTracksInPB = PBInfo["nTracks"];
-    //float zWidth = PBInfo["zWidth"];
-    //float PBCentroid = PBInfo["zPosition"]; 
-
-  
     ////////////////////////////////////////////////////////////////
     // Find location of the primary bin (from normal Delphes tracks)
     ////////////////////////////////////////////////////////////////
@@ -319,8 +240,10 @@ void AnalyseEvents(const int nEvents, ExRootTreeReader *treeReader, Plots *plots
     float vertexZ(0.0);
     int nVerticesInPB(0);
     int nVerticesInHitsPB(0);
+    int nVerticesAroundPV(0);
     int nPrimaryVertices(0);
-    //std::cout << "Number of primary vertices: " << branchVertex->GetEntriesFast() << std::endl;
+    Vertex *thePrimaryVertex;
+    //std::cout << "\nNumber of vertices: " << branchVertex->GetEntriesFast() << std::endl;
     for(int i=0; i<branchVertex->GetEntriesFast(); ++i){
       Vertex * vertex = (Vertex*) branchVertex->At(i);
       if(vertex->Z < PB_Z_max && vertex->Z > PB_Z_min) nVerticesInPB++;
@@ -329,15 +252,70 @@ void AnalyseEvents(const int nEvents, ExRootTreeReader *treeReader, Plots *plots
       else{
         vertexZ = vertex->Z;
         nPrimaryVertices++;
+        thePrimaryVertex = vertex;
         //std::cout << "Event: " << entry << " vertex z: " << vertexZ << std::endl;
       }
-      // is _the_ primary vertex inside the primary bin?
-      if(vertex->Z < PB_Z_max && vertex->Z > PB_Z_min) vertexIsInPB++;
-      if(vertex->Z < hitsPB_Z_max && vertex->Z > hitsPB_Z_min) vertexIsInPBHits++;
       
     }
     if(nPrimaryVertices > 1){
       std::cout << "ERROR: more than one true PV: " << nPrimaryVertices << std::endl; 
+    }
+
+    // faulty??? 
+    for(int i=0; i<branchVertex->GetEntriesFast(); ++i){
+      Vertex * vertex = (Vertex*) branchVertex->At(i);
+      if(vertex->GetUniqueID() == thePrimaryVertex->GetUniqueID()) continue;
+      if(vertex->Z > thePrimaryVertex->Z-1.0 && vertex->Z < thePrimaryVertex->Z+1.0){
+        nVerticesAroundPV++;
+      }
+    }
+
+    /////////////////////////////////////////////////
+    // Investigate relationship between PV and PB
+    /////////////////////////////////////////////////
+    
+    // is _the_ primary vertex inside the primary bin?
+    float distPB_PV = thePrimaryVertex->Z - PB_Z;
+    plots->nVerticesPB.at(0)->Fill(nVerticesInPB);
+    plots->nVerticesPV.at(0)->Fill(nVerticesAroundPV);
+    plots->distancePB_PV.at(0)->Fill(distPB_PV);
+    if(thePrimaryVertex->Z < PB_Z_max && thePrimaryVertex->Z > PB_Z_min){
+      vertexIsInPB++;
+      plots->nVerticesPB.at(1)->Fill(nVerticesInPB);
+      plots->distancePB_PV.at(1)->Fill(distPB_PV);
+      plots->nVerticesPV.at(1)->Fill(nVerticesAroundPV);
+    }
+    else{
+      // find out what's happend
+      plots->nVerticesPB.at(2)->Fill(nVerticesInPB);
+      plots->distancePB_PV.at(2)->Fill(distPB_PV);
+      plots->nVerticesPV.at(2)->Fill(nVerticesAroundPV);
+      //std::cout << "Distance between (nominal) PB and PV: " << thePrimaryVertex->Z - PB_Z << std::endl;//
+      //std::cout << "Num vertices in PB: " << nVerticesInPB << std::endl;
+      //std::cout << "PB location: " << PB_Z << std::endl;
+      //std::cout << "Vertex location: " << thePrimaryVertex->Z << std::endl;
+    }
+    
+
+    float distHitsPB_PV = thePrimaryVertex->Z - hitsPB_Z;
+    plots->nVerticesPB.at(3)->Fill(nVerticesInHitsPB);
+    plots->distancePB_PV.at(3)->Fill(distHitsPB_PV);
+    plots->nVerticesPV.at(3)->Fill(nVerticesAroundPV);
+    if(thePrimaryVertex->Z < hitsPB_Z_max && thePrimaryVertex->Z > hitsPB_Z_min){
+      vertexIsInPBHits++;
+      plots->nVerticesPB.at(4)->Fill(nVerticesInHitsPB);
+      plots->distancePB_PV.at(4)->Fill(distHitsPB_PV);
+      plots->nVerticesPV.at(4)->Fill(nVerticesAroundPV);
+    }
+    else{
+      // find out what's happend
+      plots->nVerticesPB.at(5)->Fill(nVerticesInHitsPB);
+      plots->distancePB_PV.at(5)->Fill(distHitsPB_PV);
+      plots->nVerticesPV.at(5)->Fill(nVerticesAroundPV);
+      //std::cout << "Distance between (hits) PB and PV: " << thePrimaryVertex->Z - hitsPB_Z << std::endl;//
+      //std::cout << "Num vertices in PB: " << nVerticesInHitsPB << std::endl;
+      //std::cout << "PB location: " << hitsPB_Z << std::endl;
+      //std::cout << "Vertex location: " << thePrimaryVertex->Z << std::endl;
     }
 
     //trackMultiplicityInPB->Fill(nTracksInPB);
@@ -346,6 +324,65 @@ void AnalyseEvents(const int nEvents, ExRootTreeReader *treeReader, Plots *plots
     //nVertexVsZPBPosition->(nVertexVsZPBPosition, PBCentroid);
     //PBvZVertexPosition->(PBCentroid, vertexZ)
     
+
+    ////////////////////////////////////
+    // Special study for plotting tracks 
+    ////////////////////////////////////
+    json trackInfo;
+    // store vertex info
+    std::vector<float> puVertexZ;
+    for(int i=0; i<branchVertex->GetEntriesFast(); ++i){
+      Vertex * vertex = (Vertex*) branchVertex->At(i);
+      if(vertex->IsPU){
+        puVertexZ.push_back(vertex->Z);
+      }
+    }
+    trackInfo["pileupVertices"] = puVertexZ;
+    trackInfo["primaryVertex"] = thePrimaryVertex->Z;
+    trackInfo["primaryBin"] = PB_Z;
+
+    // store track info (smeared tracks)
+    std::vector<float> smearedTrackEta;
+    std::vector<float> smearedTrackZ0;
+    std::vector<int> smearedTrackIsPU;
+    for(int i=0; i<branchTracksFromHitsSmeared->GetEntriesFast(); ++i){
+      Track* track = (Track*) branchTracksFromHitsSmeared->At(i);
+      smearedTrackEta.push_back(track->Eta);
+      smearedTrackZ0.push_back(track->DZ);
+      smearedTrackIsPU.push_back(track->IsPU);
+    }
+    trackInfo["smearedTrackEta"] = smearedTrackEta;
+    trackInfo["smearedTrackZ0"] = smearedTrackZ0;
+    trackInfo["smearedTrackIsPU"] = smearedTrackIsPU;
+
+    // track info (matched to PB)
+    std::vector<float> matchedTrackEta;
+    std::vector<float> matchedTrackZ0;
+    std::vector<int> matchedTrackIsPU;
+    for(int i=0; i< branchMatchedTracks->GetEntriesFast(); ++i){
+      Track* track = (Track*) branchMatchedTracks->At(i);
+      matchedTrackEta.push_back(track->Eta);
+      matchedTrackZ0.push_back(track->DZ);
+      matchedTrackIsPU.push_back(track->IsPU);
+    }
+    trackInfo["matchedTrackEta"] = matchedTrackEta;
+    trackInfo["matchedTrackZ0"] = matchedTrackZ0;
+    trackInfo["matchedTrackIsPU"] = matchedTrackIsPU;
+
+    // hit info
+    std::vector<float> hitR;
+    std::vector<float> hitZ;
+    std::vector<float> hitIsPU;
+    for(int i=0; i<branchHit->GetEntriesFast(); ++i){
+      Hit* hit = (Hit*) branchHit->At(i);
+      hitR.push_back(hit->HitRadius);
+      hitZ.push_back(hit->Z);
+      hitIsPU.push_back(hit->IsPU);
+    }
+  
+
+
+
 
 
     /********************************
@@ -356,8 +393,6 @@ void AnalyseEvents(const int nEvents, ExRootTreeReader *treeReader, Plots *plots
       Vertex * primaryBin = dynamic_cast<Vertex*>(branchPrimaryBin->At(i));
       //std::cout << "primary bin center: " << primaryBin->Z << std::endl; 
     }
-
-
     // Check to see that real PV is in the PB
     if(vertexZ > zMin && vertexZ < zMax){
       nEventsCorrectlyIdentifiedVertex++;

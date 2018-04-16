@@ -35,6 +35,7 @@ struct TrackParameterSet{
    Float_t kappa_123;
    Int_t isFake;
    Int_t Charge;
+   Int_t isPU;
 
    //Float_t zresiduum;
    //Float_t beamlineIntersect;
@@ -76,6 +77,7 @@ private:
   TrackParameterSet CalculateTrackParametersTriplet(std::vector<Candidate*>&) const; 
   float CalculateD0(float, float, float) const;
   bool isFake(std::vector<Candidate*>&) const;
+  bool isTrackPU(std::vector<Candidate*>&) const;
 
   const TObjArray *fInputArray;
   TIterator *fItInputArray;
