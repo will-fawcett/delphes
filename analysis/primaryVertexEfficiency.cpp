@@ -345,15 +345,18 @@ void AnalyseEvents(const int nEvents, ExRootTreeReader *treeReader, Plots *plots
     std::vector<float> smearedTrackEta;
     std::vector<float> smearedTrackZ0;
     std::vector<int> smearedTrackIsPU;
+    std::vector<int> smearedTrackIsFake;
     for(int i=0; i<branchTracksFromHitsSmeared->GetEntriesFast(); ++i){
       Track* track = (Track*) branchTracksFromHitsSmeared->At(i);
       smearedTrackEta.push_back(track->Eta);
       smearedTrackZ0.push_back(track->DZ);
       smearedTrackIsPU.push_back(track->IsPU);
+      smearedTrackIsFake.push_back(track->IsFake);
     }
     trackInfo["smearedTrackEta"] = smearedTrackEta;
     trackInfo["smearedTrackZ0"] = smearedTrackZ0;
     trackInfo["smearedTrackIsPU"] = smearedTrackIsPU;
+    trackInfo["smearedTrackIsFake"] = smearedTrackIsFake;
 
     // track info (matched to PB)
     std::vector<float> matchedTrackEta;
@@ -379,6 +382,15 @@ void AnalyseEvents(const int nEvents, ExRootTreeReader *treeReader, Plots *plots
       hitZ.push_back(hit->Z);
       hitIsPU.push_back(hit->IsPU);
     }
+    trackInfo["hitR"] = hitR;
+    trackInfo["hitZ"] = hitZ;
+    trackInfo["hitIsPU"] = hitIsPU;
+
+    // store the json file
+    TString jFileName = "testHitOutput.json";
+    std::cout << "Writing to json file: " << jFileName << std::endl;
+    std::ofstream ojsonfile(jFileName);
+    ojsonfile << std::setw(4) << trackInfo << std::endl;
   
 
 
