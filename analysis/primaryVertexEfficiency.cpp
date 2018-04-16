@@ -348,7 +348,7 @@ void AnalyseEvents(const int nEvents, ExRootTreeReader *treeReader, Plots *plots
     std::vector<int> smearedTrackIsFake;
     for(int i=0; i<branchTracksFromHitsSmeared->GetEntriesFast(); ++i){
       Track* track = (Track*) branchTracksFromHitsSmeared->At(i);
-      smearedTrackEta.push_back(track->Eta);
+      smearedTrackEta.push_back(track->EtaOuter); // use un-smeared Eta (smeared Eta is messed up)
       smearedTrackZ0.push_back(track->DZ);
       smearedTrackIsPU.push_back(track->IsPU);
       smearedTrackIsFake.push_back(track->IsFake);
@@ -364,7 +364,7 @@ void AnalyseEvents(const int nEvents, ExRootTreeReader *treeReader, Plots *plots
     std::vector<int> matchedTrackIsPU;
     for(int i=0; i< branchMatchedTracks->GetEntriesFast(); ++i){
       Track* track = (Track*) branchMatchedTracks->At(i);
-      matchedTrackEta.push_back(track->Eta);
+      matchedTrackEta.push_back(track->EtaOuter); // use un-smeared Eta (smeared Eta is messed up)
       matchedTrackZ0.push_back(track->DZ);
       matchedTrackIsPU.push_back(track->IsPU);
     }
